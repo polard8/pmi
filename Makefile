@@ -13,6 +13,7 @@ $(VERSION_MAJOR)$(if $(VERSION_MINOR),.$(VERSION_MINOR)$(if $(VERSION_BUILD),.$(
 
 BASE = your/base
 BOOT = boot
+DE = pmide
 
 # Documentation
 # See: $(BASE)/GRAMADO/DOCS/
@@ -206,32 +207,31 @@ land-setup:
 
 PHONY := build-gramado-files 
 build-gramado-files: \
-gramado-ws \
+gramado-de \
 gramado-services \
 desert    
 
-gramado-ws:
+gramado-de:
 
-	#:: Gramado WS
+	#:: PMI DE 
 	@echo "==================="
 	@echo "Compiling Gramado WS and some clients"
-	$(Q) $(MAKE) -C ws/
+	$(Q) $(MAKE) -C $(DE)/
 
 # Server and main client.
-	-sudo cp ws/bin/GWSSRV.BIN    $(BASE)/
-	-sudo cp ws/bin/GWS.BIN       $(BASE)/ 
+	-sudo cp $(DE)/bin/GWSSRV.BIN    $(BASE)/
+	-sudo cp $(DE)/bin/GWS.BIN       $(BASE)/ 
 
 # Clients
-	-sudo cp ws/bin/GWM.BIN       $(BASE)/
-	-sudo cp ws/bin/LOGON.BIN     $(BASE)/
-	-sudo cp ws/bin/EDITOR.BIN    $(BASE)/
-	-sudo cp ws/bin/TERMINAL.BIN  $(BASE)/
-	-sudo cp ws/bin/FILEMAN.BIN   $(BASE)/
-	-sudo cp ws/bin/BROWSER.BIN   $(BASE)/
+	-sudo cp $(DE)/bin/GWM.BIN       $(BASE)/
+	-sudo cp $(DE)/bin/LOGON.BIN     $(BASE)/
+	-sudo cp $(DE)/bin/EDITOR.BIN    $(BASE)/
+	-sudo cp $(DE)/bin/TERMINAL.BIN  $(BASE)/
+	-sudo cp $(DE)/bin/FILEMAN.BIN   $(BASE)/
+	-sudo cp $(DE)/bin/BROWSER.BIN   $(BASE)/
 
 # Copy the clients in another folder.
-	-sudo cp ws/bin/*.BIN    $(BASE)/PROGRAMS/
-
+	-sudo cp $(DE)/bin/*.BIN    $(BASE)/PROGRAMS/
 
 gramado-services:
 	#::hard Services
@@ -332,7 +332,7 @@ clean3:
 	-rm landos/setup/bin/*.BIN
 	-rm landos/cmd/bin/*.BIN
 
-	-rm ws/bin/*.BIN
+	-rm $(DE)/bin/*.BIN
 
 # clean base
 clean4:
@@ -353,10 +353,9 @@ clean-system-files:
 	-rm -rf landos/cmd/bin/*.BIN
 	-rm -rf landos/setup/bin/*.BIN
 
-	-rm -rf ws/bin/*.BIN
+	-rm -rf $(DE)/bin/*.BIN
 	-rm -rf services/gnssrv/bin/*.BIN
 # ...
-
 
 ## ==================================================================
 ## The extra stuff.
@@ -511,7 +510,7 @@ help:
 	@echo " $ make land-os       - make landos kernel and init process"
 	@echo " $ make land-cmd      - make gramado os commands"
 	@echo " $ make land-setup    - make gramado os setup applications"
-	@echo " $ make gramado-ws - make gramado os ws applications"
+	@echo " $ make gramado-de    - make pmi de applications"
 	@echo " $ make gramado-services  - make gramado os services applications"
 	@echo " $ make clean         - Remove all .o files"
 	@echo " $ make clean-all     - Remove all the object files"
