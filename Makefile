@@ -1,17 +1,21 @@
 # License: BSD License
 # Product configuration
 # See: 0config/version.h
-PRODUCT_NAME  = Gramado
-EDITION_NAME  = V
-VERSION_MAJOR = 1
-VERSION_MINOR = 1
-VERSION_BUILD = 241
-VERSION_SUBBUILD = 0000
 
-KERNELVERSION = $(VERSION_MAJOR)$(if $(VERSION_MINOR),.$(VERSION_MINOR)$(if $(VERSION_BUILD),.$(VERSION_BUILD)))
+PRODUCT_NAME = PMI 
+EDITION_NAME = 32BIT
+
+VERSION_MAJOR = 1
+VERSION_MINOR = 0
+VERSION_BUILD = 241
+KERNELVERSION = \
+$(VERSION_MAJOR)$(if $(VERSION_MINOR),.$(VERSION_MINOR)$(if $(VERSION_BUILD),.$(VERSION_BUILD)))
+
+
+BASE = your/base
 
 # Documentation
-# See: base/GRAMADO/DOCS/
+# See: $(BASE)/GRAMADO/DOCS/
 # To see the targets execute "make help".
 
 # That's our default target when none is given on the command line.
@@ -134,8 +138,8 @@ land-boot:
 	# O BM.BIN só consegue ler o root dir pra pegar o BL.BIN
 	# See: main.asm
 	
-	sudo cp landboot/bin/BM.BIN  base/
-	sudo cp landboot/bin/BL.BIN  base/
+	sudo cp landboot/bin/BM.BIN  $(BASE)/
+	sudo cp landboot/bin/BL.BIN  $(BASE)/
 
 land-lib:
 	#::rtl
@@ -159,7 +163,7 @@ land-os:
 
 	# O BL.BIN procura o kernel no diretorio GRAMADO/
 	# See: fs/loader.c
-	sudo cp landos/kernel/KERNEL.BIN  base/GRAMADO
+	sudo cp landos/kernel/KERNEL.BIN  $(BASE)/GRAMADO
 
 	#::init
 	@echo "==================="
@@ -169,31 +173,31 @@ land-os:
 	# O kernel carrega o initi do diretorio raiz.
 	# só consegue dessa forma por enquanto.
 	# See: x86/x86init.c
-	sudo cp landos/init/INIT.BIN  base/
+	sudo cp landos/init/INIT.BIN  $(BASE)/
 
 #cmd - commands.
 land-cmd:
 	#::cmd
 	$(Q) $(MAKE) -C landos/cmd/
-	-sudo cp landos/cmd/bin/CAT.BIN        base/
-#	-sudo cp landos/cmd/bin/FALSE.BIN      base/
-	-sudo cp landos/cmd/bin/REBOOT.BIN     base/
-	-sudo cp landos/cmd/bin/SHUTDOWN.BIN     base/
-#	-sudo cp landos/cmd/bin/TRUE.BIN       base/
+	-sudo cp landos/cmd/bin/CAT.BIN        $(BASE)/
+#	-sudo cp landos/cmd/bin/FALSE.BIN      $(BASE)/
+	-sudo cp landos/cmd/bin/REBOOT.BIN     $(BASE)/
+	-sudo cp landos/cmd/bin/SHUTDOWN.BIN     $(BASE)/
+#	-sudo cp landos/cmd/bin/TRUE.BIN       $(BASE)/
 
-#	-sudo cp landos/cmd/bin/SHOWFUN.BIN    base/
-#	-sudo cp landos/cmd/bin/UNAME.BIN      base/
+#	-sudo cp landos/cmd/bin/SHOWFUN.BIN    $(BASE)/
+#	-sudo cp landos/cmd/bin/UNAME.BIN      $(BASE)/
 
 land-setup:
 	#::setup
 	$(Q) $(MAKE) -C landos/setup/
 
-	sudo cp landos/setup/bin/GDESHELL.BIN  base/
+	sudo cp landos/setup/bin/GDESHELL.BIN  $(BASE)/
 
-	#sudo cp landos/setup/bin/C4.BIN       base/
-	#sudo cp landos/setup/bin/GRAMC.BIN    base/
-	#sudo cp landos/setup/bin/GRAMC4.BIN   base/
-	#sudo cp landos/setup/bin/GRAMCNF.BIN  base/
+	#sudo cp landos/setup/bin/C4.BIN       $(BASE)/
+	#sudo cp landos/setup/bin/GRAMC.BIN    $(BASE)/
+	#sudo cp landos/setup/bin/GRAMC4.BIN   $(BASE)/
+	#sudo cp landos/setup/bin/GRAMCNF.BIN  $(BASE)/
 
 
 #===================================================
@@ -214,19 +218,19 @@ gramado-ws:
 	$(Q) $(MAKE) -C ws/
 
 # Server and main client.
-	-sudo cp ws/bin/GWSSRV.BIN    base/
-	-sudo cp ws/bin/GWS.BIN       base/ 
+	-sudo cp ws/bin/GWSSRV.BIN    $(BASE)/
+	-sudo cp ws/bin/GWS.BIN       $(BASE)/ 
 
 # Clients
-	-sudo cp ws/bin/GWM.BIN       base/
-	-sudo cp ws/bin/LOGON.BIN     base/
-	-sudo cp ws/bin/EDITOR.BIN    base/
-	-sudo cp ws/bin/TERMINAL.BIN  base/
-	-sudo cp ws/bin/FILEMAN.BIN   base/
-	-sudo cp ws/bin/BROWSER.BIN   base/
+	-sudo cp ws/bin/GWM.BIN       $(BASE)/
+	-sudo cp ws/bin/LOGON.BIN     $(BASE)/
+	-sudo cp ws/bin/EDITOR.BIN    $(BASE)/
+	-sudo cp ws/bin/TERMINAL.BIN  $(BASE)/
+	-sudo cp ws/bin/FILEMAN.BIN   $(BASE)/
+	-sudo cp ws/bin/BROWSER.BIN   $(BASE)/
 
 # Copy the clients in another folder.
-	-sudo cp ws/bin/*.BIN    base/PROGRAMS/
+	-sudo cp ws/bin/*.BIN    $(BASE)/PROGRAMS/
 
 
 gramado-services:
@@ -235,8 +239,8 @@ gramado-services:
 	@echo "Compiling hard..."
 	$(Q) $(MAKE) -C services/gnssrv/ 
 	# gns
-	-sudo cp services/gnssrv/bin/GNSSRV.BIN  base/
-	-sudo cp services/gnssrv/bin/GNS.BIN     base/
+	-sudo cp services/gnssrv/bin/GNSSRV.BIN  $(BASE)/
+	-sudo cp services/gnssrv/bin/GNS.BIN     $(BASE)/
 
 #========================================
 
@@ -247,9 +251,9 @@ desert:
 
 	# todo
 	# Copy only the base of the desert inside the base of gramado.
-	#-sudo cp ../desert/base/*.BIN              base/GRAMADO/
-	#-sudo cp ../desert/base/*.TXT              base/GRAMADO/
-	#-sudo cp ../desert/setup/medium/bin/*.BIN  base/GRAMADO/
+	#-sudo cp ../desert/base/*.BIN              $(BASE)/GRAMADO/
+	#-sudo cp ../desert/base/*.TXT              $(BASE)/GRAMADO/
+	#-sudo cp ../desert/setup/medium/bin/*.BIN  $(BASE)/GRAMADO/
 	
 # 
 # more setups ? ...
@@ -284,7 +288,7 @@ vhd-copy-files:
 
 	# Copy base
 	# sends everything from base to root.
-	sudo cp -r base/*  /mnt/gramadovhd
+	sudo cp -r $(BASE)/*  /mnt/gramadovhd
 
 
 
@@ -332,12 +336,9 @@ clean3:
 
 # clean base
 clean4:
-	-rm -rf base/*.BIN 
-	-rm -rf base/GRAMADO/*.BIN 
-	-rm -rf base/PROGRAMS/*.BIN 
-	-rm -rf base/UBASE/BOOT/*.BIN 
-	-rm -rf base/UBASE/BIN/*.BIN 
-	-rm -rf base/UBASE/SBIN/*.BIN
+	-rm -rf $(BASE)/*.BIN 
+	-rm -rf $(BASE)/GRAMADO/*.BIN 
+	-rm -rf $(BASE)/PROGRAMS/*.BIN 
  
 # clean system files.
 PHONY := clean-system-files
@@ -491,12 +492,12 @@ generate:
 	@echo $(VERSION_BUILD) > BUILD.TXT
 	@echo $(KERNELVERSION) > VERSION.TXT
 	# Install in the base folder.
-	-mv PRODUCT.TXT  base/GRAMADO/
-	-mv EDITION.TXT  base/GRAMADO/
-	-mv MAJOR.TXT    base/GRAMADO/
-	-mv MINOR.TXT    base/GRAMADO/
-	-mv BUILD.TXT    base/GRAMADO/
-	-mv VERSION.TXT  base/GRAMADO/
+	-mv PRODUCT.TXT  $(BASE)/GRAMADO/
+	-mv EDITION.TXT  $(BASE)/GRAMADO/
+	-mv MAJOR.TXT    $(BASE)/GRAMADO/
+	-mv MINOR.TXT    $(BASE)/GRAMADO/
+	-mv BUILD.TXT    $(BASE)/GRAMADO/
+	-mv VERSION.TXT  $(BASE)/GRAMADO/
 
 #
 # == USAGE ========
