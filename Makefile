@@ -1,6 +1,5 @@
 # License: BSD License
 # Product configuration
-# See: 0config/version.h
 
 PRODUCT_NAME = PMI 
 EDITION_NAME = 32BIT
@@ -13,6 +12,7 @@ $(VERSION_MAJOR)$(if $(VERSION_MINOR),.$(VERSION_MINOR)$(if $(VERSION_BUILD),.$(
 
 
 BASE = your/base
+BOOT = boot
 
 # Documentation
 # See: $(BASE)/GRAMADO/DOCS/
@@ -121,25 +121,25 @@ land-setup
 land-boot:
 	#::boot
 	@echo "=================== "
-	@echo "Compiling landboot/ ... "
+	@echo "Compiling $(BOOT)/ ... "
 	# todo: Create a makefile inside  the boot/ folder.
 
 	# virtual disks.
 	# Generic name to avoid proprietary stuff.
-	$(Q) $(NASM)  landboot/vd/fat/main.asm -I landboot/vd/fat/ -o GRAMADO.VHD 
-#	$(Q) $(NASM)  landboot/vd/mbr/main.asm -I landboot/vd/mbr/ -o GRAMADO.VHD 
+	$(Q) $(NASM)  $(BOOT)/vd/fat/main.asm -I $(BOOT)/vd/fat/ -o GRAMADO.VHD 
+#	$(Q) $(NASM)  $(BOOT)/vd/mbr/main.asm -I $(BOOT)/vd/mbr/ -o GRAMADO.VHD 
 # ...
 
-	$(Q) $(MAKE) -C landboot/bm1632/x86/ 
-	$(Q) $(MAKE) -C landboot/bl32/x86/ 
+	$(Q) $(MAKE) -C $(BOOT)/bm1632/x86/ 
+	$(Q) $(MAKE) -C $(BOOT)/bl32/x86/ 
 
 	# O mbr só consegue ler o root dir para pegar o BM.BIN
 	# See: stage1.asm
 	# O BM.BIN só consegue ler o root dir pra pegar o BL.BIN
 	# See: main.asm
 	
-	sudo cp landboot/bin/BM.BIN  $(BASE)/
-	sudo cp landboot/bin/BL.BIN  $(BASE)/
+	sudo cp $(BOOT)/bin/BM.BIN  $(BASE)/
+	sudo cp $(BOOT)/bin/BL.BIN  $(BASE)/
 
 land-lib:
 	#::rtl
@@ -346,7 +346,7 @@ clean-system-files:
 	@echo "==================="
 	@echo "Cleaning all system binaries ..."
 
-	-rm -rf landboot/bin/*.BIN
+	-rm -rf $(BOOT)/bin/*.BIN
 	-rm -rf landlib/fonts/bin/*.FON
 	-rm -rf landos/kernel/KERNEL.BIN
 	-rm -rf landos/init/*.BIN
