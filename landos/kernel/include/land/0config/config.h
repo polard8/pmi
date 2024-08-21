@@ -117,9 +117,10 @@ sixth..     ide5, usually PCI, probed
 
 
 
-//#define DEFAULT_HZ 100
+#define DEFAULT_HZ  1000
 //#define DEFAULT_HZ 600 
-#define DEFAULT_HZ 1000
+//#define DEFAULT_HZ 100
+
 
 
 // Where are the types defines?
@@ -201,7 +202,7 @@ sixth..     ide5, usually PCI, probed
 //Essa flag aciona a rotina que vai checar o máximo de 
 //configurações e inicializações válidas.
 
-#define ENTRY_DEBUG_CHECK_VALIDATIONS 1
+#define ENTRY_DEBUG_CHECK_VALIDATIONS  1
 
 
 
@@ -216,11 +217,11 @@ sixth..     ide5, usually PCI, probed
 // precisamos renomear ou usarmos apenas a principal.
 
 //Esse é usado para exibir somente os marcadores principais,
-//que são mesnagens escritas em maiúculas.
-//fnciona como uma visão panorâmica, usa espinha dorsal, um esqueleto.
+//que são mensagens escritas em maiúculas.
+//funciona como uma visão panorâmica, usa espinha dorsal, um esqueleto.
 #define KERNEL_VERBOSE 1
 
-//Esse é usado para trabalhar a rotina de 
+// Esse é usado para trabalhar a rotina de 
 // entrypoint da arquitetura alvo.
 #define ENTRY_VERBOSE  1
 
@@ -231,11 +232,9 @@ sixth..     ide5, usually PCI, probed
 #define GWS_VERBOSE    1
 
 
-
 // Permite que várias mensagens secundárias 
 // sejam enviadas para a porta serial.
-// #define SERIAL_DEBUG_VERBOSE 1
-
+// #define SERIAL_DEBUG_VERBOSE  1
 
 //
 // ## breack points ##
@@ -274,7 +273,7 @@ sixth..     ide5, usually PCI, probed
 
 
 // See: include/kernel/sysio/kservers/kgws/kgws/fonts.h
-#define DEFAULT_FONT_SIZE FONT8X8
+#define DEFAULT_FONT_SIZE  FONT8X8
 //#define DEFAULT_FONT_SIZE FONT8X16
 //...
 
