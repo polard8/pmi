@@ -32,6 +32,10 @@
 ;; in 8000H and the segment is 0H.
 
 
+__FAT_SEGMENT EQU  0x6000
+__FAT_OFFSET  EQU  0x0200
+
+
 [ORG 0x8000]
 
 
@@ -398,33 +402,30 @@ bootmanagerLOAD_FAT:
     ; ?? 0:0x1000 
     ; ?? Qual � o segmento e o offset da FAT ??
 
-    mov ax, 0 
+    ;mov ax, 0
+    mov ax, __FAT_SEGMENT  ;0x6000
     mov es, ax
-
+    ;mov bx, 0x1000    ; fat_buffer ; copy FAT above bootcode.
+    mov bx, __FAT_OFFSET  ;0x0200
 
     ; Compute location of FAT and store in "ax".
     mov ax, WORD [bootmanagerHiddenSectors]       ; adjust for bootsector.
     add ax, WORD [bootmanagerReservedSectors]     ; lba inicial da fat ?.
-    mov cx, 8         ; (apenas 8 setores da fat.) (246/2)  ;; metade da fat  WORD [bootmanagerSectorsPerFAT]
-    mov bx, 0x1000    ; fat_buffer ; copy FAT above bootcode.
+
+; #bugbug
+; We need to load 246 sectors.
+; (246/2)  ;; metade da fat  WORD [bootmanagerSectorsPerFAT]
+    ;mov cx, 8
+    mov cx, 128  ;64KB (1 segment)
+
     call bootmanagerReadSectors
 
-
-	;;
 	;; Nesse momento j� carregamos a FAT.
-	;;
-
 
 	;Debug breakpoint. 
 	;jmp $
 
-
-    ;;
-    ;; Message.
-    ;;
-
-
-    ; Read image file into memory (0x2000:0)(es:bx)
+; Read image file into memory (0x2000:0)(es:bx)
     
     ;Mensagem.
     mov si, bootmanagermsgImg
@@ -434,13 +435,9 @@ bootmanagerLOAD_FAT:
     ; mov si, bootmanagermsgCRLF
     ; call bootmanagerDisplayMessage
 
-
-
     ;;
     ;; Load image.
     ;;
-
-
 
     ; Destination for the image.
     ; es:bx = (2000:0).
@@ -460,17 +457,12 @@ bootmanagerLOAD_FAT:
     ;; Salva o offset da imagem.
     push bx    
 
-
     ; FAT segment.
-    mov ax, 0 
+    ;mov ax, 0 
+    mov ax, __FAT_SEGMENT  ;0x6000
     mov gs, ax     
 
-
-    ;;
-    ;; Loading the image.
-    ;;
-
-
+; Loading the image.
 bootmanagerLOAD_IMAGE:
 
     mov ax, WORD [bootmanagercluster]    ; Cluster to read.
@@ -484,11 +476,11 @@ bootmanagerLOAD_IMAGE:
     push bx
     ;Compute next cluster.
     mov ax, WORD [bootmanagercluster]    ; Identify current cluster.
-    add ax, ax                                                ; 16 bit(2 byte) FAT entry.
-    mov bx, 0x1000                                       ; fat_buffer, offset.
-    add bx, ax                                                ; Index into FAT.
-    ;TESTANDO...
-    mov dx, WORD [gs:bx]                           ; Read two bytes from FAT.
+    add ax, ax                           ; 16 bit(2 byte) FAT entry.
+    ;mov bx, 0x1000                      ; fat_buffer, offset.
+    mov bx, __FAT_OFFSET  ;0x2000
+    add bx, ax                           ; Index into FAT.
+    mov dx, WORD [gs:bx]                 ; Read two bytes from FAT.
 .bootmanagerDONE:
     mov WORD [bootmanagercluster], dx    ; store new cluster.
 

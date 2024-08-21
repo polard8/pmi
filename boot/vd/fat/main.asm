@@ -1,31 +1,31 @@
  ;
-;; Gramado VHD - Esse é o arquivo principal de um VHD que será montado em 
+;; Gramado VHD - Esse ï¿½ o arquivo principal de um VHD que serï¿½ montado em 
 ;; assembly usando nasm. 
 ;; (c) Copyright 2019 - Fred Nora.
 ;;
 ;; File: main.asm 
 ;;
-;; Descrição:
-;;     Criaremos um VHD usando nasm. O arquivo principal, main.asm, é o 
-;; MBR do VHD e tem por objetivo carregar o BM.BIN na memória em 0:8000h e 
-;; passar o comando para ele, além de passar argumentos.
+;; Descriï¿½ï¿½o:
+;;     Criaremos um VHD usando nasm. O arquivo principal, main.asm, ï¿½ o 
+;; MBR do VHD e tem por objetivo carregar o BM.BIN na memï¿½ria em 0:8000h e 
+;; passar o comando para ele, alï¿½m de passar argumentos.
 ;;
-;;     Também estão presentes no arquivo principal, o VBR no setor 63, 
+;;     Tambï¿½m estï¿½o presentes no arquivo principal, o VBR no setor 63, 
 ;; incluido em hexadecimal para compatibilidade com sistema host na hora de 
-;; carregar os arquivos para dentro do VHD. Os marcadores de início das duas 
-;; FATs, o marcador de setores reservados, o marcador de diretório raiz,
-;; o marcador de início da área de dados e por fim o footer do vhd.
-;;     O arquivo principal só inclui o MBR, que por conveniência fica de fora
+;; carregar os arquivos para dentro do VHD. Os marcadores de inï¿½cio das duas 
+;; FATs, o marcador de setores reservados, o marcador de diretï¿½rio raiz,
+;; o marcador de inï¿½cio da ï¿½rea de dados e por fim o footer do vhd.
+;;     O arquivo principal sï¿½ inclui o MBR, que por conveniï¿½ncia fica de fora
 ;; podendo ser subtituido na hora do teste.
-;;     @todo: Podemos incluir também o VBR que está em hexadecimal.
-;;     @todo: Agora que o BM.BIN é carregado ddo sistema de arquivos, temos
-;; a opção de configurarmos uma GPT logo após o MBR.
+;;     @todo: Podemos incluir tambï¿½m o VBR que estï¿½ em hexadecimal.
+;;     @todo: Agora que o BM.BIN ï¿½ carregado ddo sistema de arquivos, temos
+;; a opï¿½ï¿½o de configurarmos uma GPT logo apï¿½s o MBR.
 ;;
-;;    O modo de vído usado é o modo texto, herdado do BIOS.
-;; O modo de vídeo não será alterado no MBR.
+;;    O modo de vï¿½do usado ï¿½ o modo texto, herdado do BIOS.
+;; O modo de vï¿½deo nï¿½o serï¿½ alterado no MBR.
 ;;
 ;;
-;; Histórico:
+;; Histï¿½rico:
 ;;     2017 - Created by Fred Nora.
 ;;     2019 -
 ;;     ...
@@ -36,15 +36,10 @@
 ;; codename db 'londrina'
 ;;
 
-;;
-;; A origem fica em 0, e os segmentos são configurados em 0x7c0, pois
+;; A origem fica em 0, e os segmentos sï¿½o configurados em 0x7c0, pois
 ;; o BIOS carrega o MBR em 0x07c0:0, ou seja 0x7c00.
-;;
-
 
 [ORG 0]
-
-
 
 ;16bit. Entry point do MBR.
 [bits 16]
@@ -55,7 +50,7 @@ boot_main:
     ;;============================================
     ;;    ****    Entry point do MBR    ****    ;;
     ;;============================================
-    ; Stage 1. Esse é o MBR. Carrega o stage 2.
+    ; Stage 1. Esse ï¿½ o MBR. Carrega o stage 2.
 
     %include "stage1.asm"
 
@@ -77,7 +72,7 @@ eof:                                                      ;
 ;;=========================================================
 ;;                      ## VBR ##   #63
 ;;=========================================================
-;;     O VBR da primeira partição fica no setor 63. #63
+;;     O VBR da primeira partiï¿½ï¿½o fica no setor 63. #63
 
 fs_fat16_vbr:
     %include "vbr1.asm"    
@@ -105,7 +100,7 @@ fs_hidden_sectors:
 
 ;;========================================================
 ;; fs_fat16_fat1:
-;;     Aqui começa a primeira FAT.  #67
+;;     Aqui comeï¿½a a primeira FAT.  #67
 ;;     Cada fat tem 246 setores
 ;;
 fs_fat16_fat1: 
@@ -122,7 +117,7 @@ fs_fat16_fat1:
 	
 ;;========================================================
 ;; fs_fat16_fat2:
-;;     Aqui começa a segunda FAT.    #313
+;;     Aqui comeï¿½a a segunda FAT.    #313
 ;;     Cada fat tem 246 setores
 ;;
 fs_fat16_fat2:
@@ -139,7 +134,7 @@ fs_fat16_fat2:
 	
 ;;========================================================
 ;; fs_fat16_rootdir:
-;;     Aqui começa o diretório raiz. #559
+;;     Aqui comeï¿½a o diretï¿½rio raiz. #559
 	
 fs_fat16_rootdir:
 .firstEntry:   
@@ -168,7 +163,7 @@ fs_fat16_rootdir:
     ;; Podemos limitar o numero de metafiles a '1',
     ;; assim nao teremos muitos arquivos que nao podem ser tocados,
     ;; apenas dois, os dois primeiros.
-    ;; Teremos que compactar as informaçoes dentro da entrada.
+    ;; Teremos que compactar as informaï¿½oes dentro da entrada.
     ;; #todo: todos os metafiles podem apontar para o mesmo
     ;; cluster apontado pela label ... que provavelmente eh nenhum ...
     ;; ou aponta para os dois primeiros, que estao fora do range
@@ -176,7 +171,7 @@ fs_fat16_rootdir:
     
     
     
-    ;; Completando o diretório raiz do volume de boot.
+    ;; Completando o diretï¿½rio raiz do volume de boot.
     ;; 512 entradas de 32 bytes cada.
 
     ;;times (32*512) - (32*1) db 0   ;; Com apenas a label   GRAMADO
@@ -211,17 +206,17 @@ fs_fat16_rootdir:
 ;;                                                                    ;
 fs_fat16_data_area:                                                   
     
-	;; Essa área compreende o espaço entre o início da área de dados 
-	;; da primeira partição até o fim do disco virtual, onde deve ficar o 
+	;; Essa ï¿½rea compreende o espaï¿½o entre o inï¿½cio da ï¿½rea de dados 
+	;; da primeira partiï¿½ï¿½o atï¿½ o fim do disco virtual, onde deve ficar o 
 	;; footer do vhd conectix da Microsoft.
-	;; Nesse caso o disco tem 32MB. Esse será o padrão de tamanho para 
+	;; Nesse caso o disco tem 32MB. Esse serï¿½ o padrï¿½o de tamanho para 
 	;; discos vhd usados pelo Gramado.
-	;; Outras opções de tamanho serão criadas depois.
-	;; Obs: Outra partição poderá ser criada dentro desse espaço.
-	;;      Será a partição do sistema, usando o sistema de arquivos ext2.
+	;; Outras opï¿½ï¿½es de tamanho serï¿½o criadas depois.
+	;; Obs: Outra partiï¿½ï¿½o poderï¿½ ser criada dentro desse espaï¿½o.
+	;;      Serï¿½ a partiï¿½ï¿½o do sistema, usando o sistema de arquivos ext2.
 	
-    ;; Completaremos com zeros até o fim do disco.
-    ;; 32MB menos a área já utilizada pelas partes criadas anteriormente,
+    ;; Completaremos com zeros atï¿½ o fim do disco.
+    ;; 32MB menos a ï¿½rea jï¿½ utilizada pelas partes criadas anteriormente,
 	;; menos 4 bytes de assinatura antes do footer.
 	
 	;Full data area with zeros.                                           
