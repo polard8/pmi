@@ -841,8 +841,8 @@ void destroy_window (struct gws_window_d *window)
 // Receive the tid of the client in the request packet.
 // Save it as an argument of the window structure.
 
-int serviceCreateWindow (void){
-
+int serviceCreateWindow (void)
+{
     //loop
     register int i=0;
 
@@ -864,15 +864,12 @@ int serviceCreateWindow (void){
     unsigned long color=0;
     unsigned long type=0;
 
-
     // tid da control thread do cliente.
     int ClientPID = -1;
     int ClientTID = -1;
 
-
-    gwssrv_debug_print ("serviceCreateWindow:\n");
+    //gwssrv_debug_print ("serviceCreateWindow:\n");
     //printf ("serviceCreateWindow:\n");
-
 
     // #todo
     // Check all the header.
@@ -897,7 +894,6 @@ int serviceCreateWindow (void){
     //printf ("serviceCreateWindow: pid=%d tid=%d *breakpoint\n", 
     //    ClientPID, ClientTID );
     //while(1){}
-
 
     //++
     // String support 
@@ -951,44 +947,37 @@ int serviceCreateWindow (void){
         exit(1); 
     }
 
-    //
-    // Draw
-    //
+//
+// Draw
+//
 
-    Window = (struct gws_window_d *) createwCreateWindow ( 
-                                         type, 1, 1, name_buffer, 
-                                         x, y, w, h, 
-                                         Parent, 0, 
-                                         COLOR_PINK, color ); 
+    Window = 
+        (struct gws_window_d *) createwCreateWindow ( 
+                                    type, 1, 1, name_buffer, 
+                                    x, y, w, h, 
+                                    Parent, 0, 
+                                    COLOR_PINK, color ); 
 
-    if ( (void *) Window == NULL )
+    if ((void *) Window == NULL)
     {
-       gwssrv_debug_print ("gwssrv: createwCreateWindow fail\n");
-       next_response[1] = 0;
-       return -1;
+        gwssrv_debug_print ("gwssrv: createwCreateWindow fail\n");
+        next_response[1] = 0;
+        return -1;
     }
 
-    // Register window
+// Register window
     id = gwsRegisterWindow(Window);
-
     if (id<0){
         gwssrv_debug_print ("gwssrv: serviceCreateWindow Couldn't register window\n");
         next_response[1] = 0;  // msg code.
         return -1;
     }
 
-
-
-
-
-    // #test
-    // Save the tid of the client.
+// #test
+// Save the tid of the client.
     
     Window->client_pid = ClientPID;
     Window->client_tid = ClientTID;
-
-
-
 
     //
     // The client's fd.
@@ -1024,8 +1013,6 @@ int serviceCreateWindow (void){
 
     return 0;
 }
-
-
 
 int serviceChangeWindowPosition(void)
 {

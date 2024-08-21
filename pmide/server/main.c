@@ -206,6 +206,18 @@ void init_client_struct ( struct gws_client_d *c );
 // ==============================================================
 //
 
+
+// yield thread.
+void gwssrv_yield(void)
+{
+    sc82(265,0,0,0);
+}
+
+char *gwssrv_get_version(void)
+{
+    return VERSION;
+}
+
 // Print a simple string in the serial port.
 void gwssrv_debug_print (char *string)
 {
@@ -471,287 +483,6 @@ __again:
 }
 */
 
-
-/*
- ****************************
- * xxxGetNextClientRequest:
- *
- */
-
-// internal.
-// Messages sent via socket.
-// obs: read and write use the buffer '__buffer'
-// in the top of this file.
-
-// #todo:
-// No loop precisamos de accept() read() e write();
-// Get client's request from socket.
-
-void xxxHandleNextClientRequest (int fd)
-{
-    // Isso permite ler a mensagem na forma de longs.
-    unsigned long *message_buffer = (unsigned long *) &__buffer[0];
-
-    int n_reads  = 0;  // For requests.
-    int n_writes = 0;  // For responses.
-
-    // #todo:
-    // No loop precisamos de accept() read() e write();
-
-    //#atenção:
-    // A função accept vai retornar o descritor do 
-    // socket que usaremos ... por isso poderemos fecha-lo
-    // para assim obtermos um novo da próxima vez.
-
-
-    gwssrv_debug_print ("xxxHandleNextClientRequest: \n");
-
-    // Fail, cleaning.
-    if (fd<0){
-        gwssrv_debug_print ("xxxHandleNextClientRequest: xxxHandleNextClientRequest fd\n");
-        goto exit2;
-    }
-
-
-//__loop:
-
-    //
-    // == Request ============================
-    //
-
-    // Requests may generate replies, events, and errors;
-    // Request packets are numbered sequentially by the server 
-    // as soon as it receives them.
-
-    // See:
-    // https://en.wikipedia.org/wiki/Round-trip_delay
-
-    // If the request is (XNextEvent), so the reply will be the event.
-
-    /*
-    // Is current client connected.
-    if (currentClient->is_connected == 0)
-    {
-        // [FAIL] Not connected.
-        // close?
-    }
-    */
-
-    // #important
-    // We can handle only requests.
-    // Drop it!
-
-    int value = rtl_get_file_sync( fd, SYNC_REQUEST_GET_ACTION );
-
-    if ( value != ACTION_REQUEST ){
-        gwssrv_yield();
-        goto exit0;
-    }
-
-    // #todo
-    // Devemos escrever em nosso próprio
-    // socket e o kernel copia??
-    // o kernel copia para aquele arquivo ao qual esse estivere conectado.
-    // olhando em accept[0]
-
-    //
-    // Recv.
-    //
-  
-    n_reads = read ( fd, __buffer, sizeof(__buffer) );
-    //n_reads = recv ( fd, __buffer, sizeof(__buffer), 0 );
-
-
-    // Precisamos fechar o client e yield.
-    // Cleaning
-    if (n_reads <= 0){
-        gwssrv_debug_print ("xxxHandleNextClientRequest: read fail\n");
-        goto exit2;
-    }
-
-    // Nesse momento lemos alguma coisa.   
- 
-    //
-    // == Processing the request =============================
-    //
- 
-    // Invalid request. Yield and clean.
-    if (message_buffer[1] == 0 ){
-        gwssrv_debug_print ("xxxHandleNextClientRequest: Invalid request!\n");
-        goto exit2;
-    }
-
-
-    // #test
-    // Input solicitado por um cliente
-    // Isso deve acontecer quando o cliente chama alguma função
-    // do tipo: gws_get_next_event() da libgws.
-    // Em outro caso, no loop principal, esse servidor 
-    // deve pegar os inputs vindos do sistema e colocar 
-    // na fila de entrada do cliente com o foco de entrada.
-    // o cliente com o foco de entrada possui a janela com 
-    // o foco de entrada.
-
-
-    //
-    // == Got a request! ============
-    //
-
-    debug_print ("xxxHandleNextClientRequest: Got a request!\n");
-    debug_print ("xxxHandleNextClientRequest: Calling window procedure\n");
-
-    // #todo
-    // Dependendo do tipo de request, então construiremos
-    // a resposta ou prestatemos os serviço.
-    // Para cada tipo de request o servidor precisa construir
-    // uma resposta diferente.
-    // O request afeta os campos da mensagem.
-    // Esses campos estão em um buffer, mas poderiam estar
-    // em um arquivo json.
-
-    // Types:
-    // + Null: fail.
-    // + Identify: The server needs to identify itself.
-    // + Get all objects:
-    // + Set inspected object:
-    // + Set property: Probably setting a property of an object.
-    // + Disconnect:
-    // ...
-
-    // #debug: para a máquina real.
-    // printf ("gws: got a message!\n");
-    // printf ("gws: xxxGetNextClientRequest: calling window procedure \n");
- 
-    // Realiza o serviço.
-
-    gwsProcedure (
-       (struct gws_window_d *) message_buffer[0], 
-       (int)                   message_buffer[1], 
-       (unsigned long)         message_buffer[2], 
-       (unsigned long)         message_buffer[3] );
-
-    // #todo
-    // Se o request foi um request de evento,
-    // significa que o cliente deseja receber o próximo evento da 
-    // lista de eventos.
-    // podemos passar mensagens recebidas pelo gws para o cliente.
-
-    // ??
-    // espera ate conseguir enviar a resposta.
-    // o kernel precisa copiar para aquele conectado em accept[]
-
-    //
-    // == Sending reply =======================================
-    //
-
-    // Alguns requests nao exigem resposta,
-    // Entao precisamos modificar a flag de sincronizaçao.
-    // que ainda deve estar sinalizando um request.
-    
-    if (NoReply == TRUE){
-        rtl_set_file_sync( 
-            fd, SYNC_REQUEST_SET_ACTION, ACTION_NULL );
-        goto exit0;
-    }
-
-    //gwssrv_debug_print ("Sending response ...\n");  
-
-    //# it works.
-    char *m = (char *) (&__buffer[0] + 16);
-    sprintf( m, "~ Response from gwssrv \n");
-
-    // Primeiros longs do buffer.
-    message_buffer[0] = next_response[0];         // Window ID.
-    message_buffer[1] = SERVER_PACKET_TYPE_REPLY; // next_response[1] 
-    message_buffer[2] = next_response[2];         // Return value (long1)
-    message_buffer[3] = next_response[3];         // Return value (long2)
-
-//__again:
-
-    //
-    // == Response ============================
-    //
-
-    gwssrv_debug_print ("xxxHandleNextClientRequest: Sending response ...\n");
-
-    // #todo:
-    // while(1){...}
-
-    /*
-    // Is current client connected.
-    if (currentClient->is_connected == 0)
-    {
-        // [FAIL] Not connected.
-        // close?
-    }
-    */
-
-    // set response
-    rtl_set_file_sync( fd, SYNC_REQUEST_SET_ACTION, ACTION_REPLY );
-
-    //
-    // Send
-    //
-
-    n_writes = write ( fd, __buffer, sizeof(__buffer) );
-    //n_writes = send ( fd, __buffer, sizeof(__buffer), 0 );
-
-    // limpa.
-    // se a resposta der certo ou se der errado.
-
-    // Cleaning
-    message_buffer[0] = 0;
-    message_buffer[1] = 0;
-    message_buffer[2] = 0;
-    message_buffer[3] = 0;
-    register int b=0;
-    for (b=0; b<MSG_BUFFER_SIZE; ++b){
-        __buffer[b] = 0;
-    };
-
-    // Cleaning
-    // 32. #todo 512.
-    register int c=0;
-    for (c=0; c<NEXTRESPONSE_BUFFER_SIZE; ++c){
-        next_response[c] = 0;
-    };
-
-    // No. We couldn't send a response.
-    // O que acontece se nao conseguirmos enviar uma resposta?
-    // Certamente o cliente tentara ler e tera problemas.
-    // Deveriamos fechar a conexao?
-    // Deveriamos enviar um alerta
-    
-    if (n_writes<=0){
-        gwssrv_debug_print ("xxxHandleNextClientRequest:  response fail\n");
-        printf("gwssrv-xxxHandleNextClientRequest: Couldn't send reply\n");
-        //close(fd);
-        goto exit2;
-    }
-
-    // YES, We sent a response.
-    if (n_writes>0){
-       gwssrv_debug_print ("xxxHandleNextClientRequest: Response sent\n");
-        goto exit0;
-    }
-
-    // ??
-
-exit2:
-    message_buffer[0] = 0;
-    message_buffer[1] = 0;
-    message_buffer[2] = 0;
-    message_buffer[3] = 0;
-    message_buffer[4] = 0;
-    message_buffer[5] = 0;
-exit1:
-    gwssrv_yield();
-exit0:
-    return;
-}
-
-
-
 /*
  //#test
 void ____get_system_message( unsigned long buffer );
@@ -768,11 +499,9 @@ void ____get_system_message( unsigned long buffer )
 */
 
 /*
- ********************************** 
  * xxxGetNextSystemMessage: 
  *
  */
-
 // internal
 // System ipc messages. (It's like a signal)
 // Get system message from the thread's queue.
@@ -809,15 +538,528 @@ void xxxHandleNextSystemMessage (void)
      message_buffer[3] = 0;
 }
 
+void create_background (void)
+{
+    unsigned long w = gws_get_device_width();
+    unsigned long h = gws_get_device_height();
+    int WindowId = -1;
+
+
+    gwssrv_debug_print ("gwssrv: create_background\n");
+
+
+    if ( w==0 || h==0 )
+    {
+        gwssrv_debug_print ("create_background: w h\n");
+        printf             ("create_background: w h\n");
+        exit(1);
+    }
+
+
+    // The background window
+    // #todo
+    // Se estivermos em JAIL, podemos arriscar algum background melhor.
+    // Talvez alguma imagem.
+
+    __root_window = (struct gws_window_d *) createwCreateWindow ( 
+                                            WT_SIMPLE, 
+                                            1, 1, "gwssrv-bg",  
+                                            0, 0, w, h,   
+                                            gui->screen_window, 0, 
+                                            COLOR_BACKGROUND, COLOR_BACKGROUND );    
+
+    if ( (void *) __root_window == NULL )
+    {
+        gwssrv_debug_print ("gwssrv: __root_window fail\n"); 
+        printf             ("gwssrv: __root_window fail\n");
+        exit (1);
+        return;
+    }
+
+    // Register.
+    WindowId = gwsRegisterWindow (__root_window);
+
+    if (WindowId<0){
+        gwssrv_debug_print ("create_background: Couldn't register window\n");
+        //return;
+    }
+
+    //__root_window->dirty = 1;
+
+    if (current_mode == GRAMADO_JAIL){
+        refresh_screen();
+    }
+
+    //#debug
+    //while(1){}
+}
+
+// Initialize the client list.
+// This is an array of connections.
+// See: clients.h
+
+void gwssrv_init_client_support (void)
+{
+    int i=0;
+
+
+    gwssrv_debug_print ("gwssrv_init_client_support:\n");
+
+    for (i=0; i<CLIENT_COUNT_MAX; i++)
+    {
+        connections[i] = 0;
+    };
+ 
+ 
+//
+// The current client
+//
+
+    currentClient = (struct gws_client_d *) 0;
+    
+    
+    // The server client.
+    serverClient = (struct gws_client_d *) malloc ( sizeof( struct gws_client_d ) );
+    if ( (void *) serverClient == NULL ){
+        gwssrv_debug_print ("gwssrv_init_client_support: [FATAL] Couldn't create serverClient\n");
+        printf             ("gwssrv_init_client_support: [FATAL] Couldn't create serverClient\n");
+        exit(1);
+    }else{
+        serverClient->id = 0;
+        serverClient->used  = TRUE;
+        serverClient->magic = 1234;
+        serverClient->is_connected = FALSE;
+        serverClient->fd = -1;
+        serverClient->pid = getpid();
+        serverClient->gid = getgid();
+        // ...
+
+        // #todo
+        // Limpar a fila de mensagens para esse cliente.
+        
+        for (i=0; i<CLIENT_COUNT_MAX; i++)
+        {
+            serverClient->window_list[i] = 0;
+            serverClient->msg_list[i]    = 0;
+            serverClient->long1_list[i]  = 0;
+            serverClient->long2_list[i]  = 0;
+        };
+        serverClient->tail_pos = 0;
+        serverClient->head_pos = 0;
+        
+        // ...
+
+        connections[SERVER_CLIENT_INDEX] = (unsigned long) serverClient;
+    };
+}
+
+
+void init_client_struct ( struct gws_client_d *c )
+{
+    int i=0;
+
+
+    if ( (void*) c == NULL )
+    {
+        gwssrv_debug_print("init_client_struct: c fail\n");
+        return;
+    }
+
+
+    c->id = -1;  //fail
+
+    c->used  = TRUE;
+    c->magic = 1234;
+    c->is_connected = FALSE;
+    c->fd  = -1;
+    c->pid = -1;
+    c->gid = -1;
+ 
+    for (i=0; i<CLIENT_COUNT_MAX; i++)
+    {
+        c->window_list[i] = 0;
+        c->msg_list[i]    = 0;
+        c->long1_list[i]  = 0;
+        c->long2_list[i]  = 0;
+    };
+    c->tail_pos = 0;
+    c->head_pos = 0;
+}
 
 /*
- **********************************
+ //Send the message in the buffer to all the clients.
+ //This is a great opportunity to shutdown the clients
+ //if it is not connected.
+
+void gwssrv_message_all_clients(void);
+void gwssrv_message_all_clients(void)
+{
+}
+*/
+
+
+//
+// $
+// SERVICES
+//
+
+// When a client send us an event
+int serviceClientEvent(void)
+{
+    //O buffer é uma global nesse documento.
+    unsigned long *message_address = (unsigned long *) &__buffer[0];
+
+    unsigned long window =0;
+    unsigned long msg    =0;
+    unsigned long long1  =0;
+    unsigned long long2  =0;
+
+    //struct gws_client_d *client;
+    //struct gws_window_d *hWindow;
+    //struct gws_event_d  *event;
+    //...
+
+    window  = message_address[0]; 
+    msg     = message_address[1]; 
+    long1   = message_address[2]; 
+    long2   = message_address[3]; 
+
+    //z      = message_address[4]; 
+    //z      = message_address[5]; 
+    //z      = message_address[6]; 
+    //z      = message_address[7]; 
+    // ...
+
+    // ...
+
+    return -1;
+}
+
+
+// When a client get the next event from it's own queue.
+int serviceNextEvent (void)
+{
+    //O buffer é uma global nesse documento.
+    unsigned long *message_address = (unsigned long *) &__buffer[0];
+
+    unsigned long window =0;
+    unsigned long msg    =0;
+    unsigned long long1  =0;
+    unsigned long long2  =0;
+
+
+    //struct gws_client_d *client;
+    //struct gws_window_d *hWindow;
+    //struct gws_event_d  *event;
+    //...
+
+
+    //printf ("serviceNextEvent: \n");
+
+    window  = message_address[0]; 
+    msg     = message_address[1]; 
+    long1   = message_address[2]; 
+    long2   = message_address[3]; 
+
+    //z      = message_address[4]; 
+    //z      = message_address[5]; 
+    //z      = message_address[6]; 
+    //z      = message_address[7]; 
+    // ...
+
+    // ...
+
+    return -1;
+}
+
+
+// #todo
+// Close all the clients and close the server.
+void serviceExitGWS(void)
+{
+    printf ("serviceExitGWS: \n");
+    
+    // Kill all the clients.
+    printf ("[TODO] Kill all the clients\n");
+
+    // #todo
+    // Deallocate resources used by the server.
+
+    // Close the server.
+    printf ("[TODO] Close all the clients\n");
+    exit(0);
+}
+
+int servicePutClientMessage(void)
+{
+    unsigned long *message_address = (unsigned long *) &__buffer[0];
+    
+    int           window = 0;
+    int           msg    = 0;  // msg = Put message
+    unsigned long long1  = 0;  // client id
+    unsigned long long2  = 0;
+    // ...
+
+
+    struct gws_client_d *client;
+    int client_id = -1;
+    //
+    // parameters
+    //
+
+    window = (int)           message_address[0];
+    msg    = (int)           message_address[1];
+    long1  = (unsigned long) message_address[2]; 
+    long2  = (unsigned long) message_address[3];
+    //...
+
+
+    // Check the message code.
+    if ( msg != GWS_PutClientMessage )
+    {
+        return -1;
+    }
+
+    // Get the client id.
+
+    client_id = (int) long1;
+    if (client_id<0 || client_id >= CLIENT_COUNT_MAX)
+    {
+        return -1;
+    }
+
+    client = (struct gws_client_d *) connections[client_id];
+    if ( (void*) client == NULL )
+        return -1;
+    
+    if ( client->used != NULL || client->magic != 1234 )
+    {
+        return -1;
+    }
+    
+    client->tail_pos++;
+    if ( client->tail_pos >= 32 )
+    {
+        client->tail_pos = 0;
+    }
+    
+    int Slot = (int) client->tail_pos;
+    
+    client->window_list[Slot] = (int) window;
+    client->msg_list[Slot]    = (int) msg;
+    client->long1_list[Slot]  = (unsigned long) long1;
+    client->long2_list[Slot]  = (unsigned long) long2;
+    // ...
+    
+    message_address[0] = 0;
+    message_address[1] = 0;
+    message_address[2] = 0;
+    message_address[3] = 0;
+    
+    return 0;
+}
+
+
+int serviceGetClientMessage(void)
+{
+    unsigned long *message_address = (unsigned long *) &__buffer[0];
+    
+    int           window = 0;
+    int           msg    = 0;  // msg = Put message
+    unsigned long long1  = 0;  // client id
+    unsigned long long2  = 0;
+    // ...
+
+    struct gws_client_d *client;
+    int client_id = -1;
+    //
+    // parameters
+    //
+
+    window = (int)           message_address[0];
+    msg    = (int)           message_address[1];
+    long1  = (unsigned long) message_address[2]; 
+    long2  = (unsigned long) message_address[3];
+    //...
+
+    // Check the message code.
+    if ( msg != GWS_GetClientMessage )
+    {
+        return -1;
+    }
+
+    // Get the client id.
+
+    client_id = (int) long1;
+    if (client_id<0 || client_id >= CLIENT_COUNT_MAX)
+    {
+        return -1;
+    }
+
+    client = (struct gws_client_d *) connections[client_id];
+    if ( (void*) client == NULL )
+        return -1;
+    
+    if ( client->used != NULL || client->magic != 1234 )
+    {
+        return -1;
+    }
+    
+    client->head_pos++;
+    if ( client->head_pos >= 32 )
+    {
+        client->head_pos = 0;
+    }
+
+    int Slot = (int) client->tail_pos;
+    
+    message_address[0] = client->window_list[Slot];
+    message_address[1] = client->msg_list[Slot];
+    message_address[2] = client->long1_list[Slot];
+    message_address[3] = client->long2_list[Slot];
+    // ...
+    
+    return 0;
+}
+
+// No response.
+int serviceAsyncCommand (void)
+{
+    //O buffer é uma global nesse documento.
+    unsigned long *message_address = (unsigned long *) &__buffer[0];
+
+    // int window_id=0;
+    unsigned long message_id =0;
+    unsigned long request_id =0;
+    unsigned long subrequest_id = 0;
+    unsigned long Data = 0;
+
+    //
+    // parameters
+    //
+
+    // window_id   = message_address[0];
+    message_id     = message_address[1];   // message
+    request_id     = message_address[2]; 
+    subrequest_id  = message_address[3];
+    Data           = message_address[4];
+
+    // ...
+
+    // Validate our message number.
+
+    if (message_id != 2222)
+    {
+        gwssrv_debug_print ("serviceAsyncCommand: [ERROR] message id\n");
+                    printf ("serviceAsyncCommand: [ERROR] message id\n");
+        return -1;
+    }
+
+
+    // #debug
+    // printf ("serviceAsyncCommand: [request %d] \n", request_id);
+ 
+    switch (request_id){
+
+        // 1 =  Exit GWS
+        // #todo:
+        // Close all the clients and close the server.
+        case 1:
+            gwssrv_debug_print ("serviceAsyncCommand: [request 1]  Exit GWS\n");
+                        //printf ("serviceAsyncCommand: [request 1] Closing server\n");
+            printf("serviceAsyncCommand: Exit GWS\n");
+            serviceExitGWS();
+            printf("serviceAsyncCommand: [FAIL] fail when closing the GWS\n");
+            exit(0);
+            break;
+
+        case 2:
+            gwssrv_debug_print ("serviceAsyncCommand: [request 2] \n");
+            printf("PING\n");
+            //Notify_CloseClient = TRUE;
+            //Notify_PongClient = TRUE;
+            //exit(0);
+            return 0;
+            break;
+
+        case 3:
+            gwssrv_debug_print ("serviceAsyncCommand: [request 3] hello\n");
+            printf("HELLO\n");
+            //exit(0);
+            return 0;
+            break;
+        
+        // See: demos.c
+        case 4:
+            if (current_mode == GRAMADO_JAIL)
+            {
+                gwssrv_debug_print("serviceAsyncCommand: [request 4] demo\n"); 
+                demos_startup_animation(subrequest_id);
+                gwssrv_show_backbuffer();
+                return 0;
+            }
+            break;
+
+        // Draw black rectangle.
+        case 5:
+           if (current_mode == GRAMADO_JAIL)
+           {
+               rectBackbufferDrawRectangle ( 
+                   0, 0, 320, 200, COLOR_BLACK, 1 );
+               return 0;
+           }
+           break;
+
+        // Setup if we will show or not the 'fps window'.
+        case 6:
+            if( subrequest_id == TRUE )
+            {
+                show_fps_window = TRUE;
+                return 0;
+            }
+            show_fps_window = FALSE;
+            break;
+
+         // Register wm pid
+         case 7:
+            gwssrv_debug_print ("serviceAsyncCommand: [7] Register wm pid\n");
+             //printf ("serviceAsyncCommand: [7] [BREAKPOINT] Register wm pid\n");
+             ____saved_wm_magic_pid = (int) Data;
+             //exit(0);
+             return 0;
+             break;
+             
+        // 8
+        // Window Manager requests. Power Trio.
+        // As mensages aqui interessam somente ao window manager
+        // que esta dentro do window server.
+        case 8:
+            printf ("serviceAsyncCommand: [8] \n");
+            if (subrequest_id = 1)
+            {
+                
+                //exit(0);
+            }
+            break;
+            
+
+        // ...
+                
+        default:
+            gwssrv_debug_print ("serviceAsyncCommand: [ERROR] bad request\n");
+                     // printf ("serviceAsyncCommand: [ERROR] bad request\n");
+            // return -1;
+            break;
+    };
+
+    return -1;
+}
+
+/*
  * gwsProcedure:
  *     Main dialog.
  */
-
 // Called by xxxHandleNextClientRequest.
-
 int
 gwsProcedure ( 
     struct gws_window_d *window, 
@@ -829,7 +1071,7 @@ gwsProcedure (
     int my_pid = -1;
 
     // #debug
-    debug_print ("gwssrv: gwsProcedure\n");
+    //debug_print ("gwssrv: gwsProcedure\n");
 
     // See:
     // globals.h
@@ -1108,80 +1350,293 @@ gwsProcedure (
     return 0;
 }
 
+/*
+ * xxxGetNextClientRequest:
+ *
+ */
+// internal.
+// Messages sent via socket.
+// obs: read and write use the buffer '__buffer'
+// in the top of this file.
 
+// #todo:
+// No loop precisamos de accept() read() e write();
+// Get client's request from socket.
 
-void create_background (void)
+void xxxHandleNextClientRequest (int fd)
 {
-    unsigned long w = gws_get_device_width();
-    unsigned long h = gws_get_device_height();
-    int WindowId = -1;
+    // Isso permite ler a mensagem na forma de longs.
+    unsigned long *message_buffer = (unsigned long *) &__buffer[0];
 
+    int n_reads  = 0;  // For requests.
+    int n_writes = 0;  // For responses.
 
-    gwssrv_debug_print ("gwssrv: create_background\n");
+    // #todo:
+    // No loop precisamos de accept() read() e write();
 
+    //#atenção:
+    // A função accept vai retornar o descritor do 
+    // socket que usaremos ... por isso poderemos fecha-lo
+    // para assim obtermos um novo da próxima vez.
 
-    if ( w==0 || h==0 )
-    {
-        gwssrv_debug_print ("create_background: w h\n");
-        printf             ("create_background: w h\n");
-        exit(1);
+    //gwssrv_debug_print ("xxxHandleNextClientRequest: \n");
+
+    // Fail, cleaning.
+    if (fd<0){
+        gwssrv_debug_print ("xxxHandleNextClientRequest: xxxHandleNextClientRequest fd\n");
+        goto exit2;
     }
 
+//__loop:
 
-    // The background window
+    //
+    // == Request ============================
+    //
+
+    // Requests may generate replies, events, and errors;
+    // Request packets are numbered sequentially by the server 
+    // as soon as it receives them.
+
+    // See:
+    // https://en.wikipedia.org/wiki/Round-trip_delay
+
+    // If the request is (XNextEvent), so the reply will be the event.
+
+    /*
+    // Is current client connected.
+    if (currentClient->is_connected == 0)
+    {
+        // [FAIL] Not connected.
+        // close?
+    }
+    */
+
+// #important
+// We can handle only requests.
+// Drop it!
+
+    int value = rtl_get_file_sync( fd, SYNC_REQUEST_GET_ACTION );
+    if ( value != ACTION_REQUEST ){
+        gwssrv_yield();
+        goto exit0;
+    }
+
+// #todo
+// Devemos escrever em nosso próprio
+// socket e o kernel copia??
+// o kernel copia para aquele arquivo ao qual esse estivere conectado.
+// olhando em accept[0]
+
+    //
+    // Recv.
+    //
+  
+    n_reads = read ( fd, __buffer, sizeof(__buffer) );
+    //n_reads = recv ( fd, __buffer, sizeof(__buffer), 0 );
+
+    // Precisamos fechar o client e yield.
+    // Cleaning
+    if (n_reads <= 0){
+        gwssrv_debug_print ("xxxHandleNextClientRequest: read fail\n");
+        goto exit2;
+    }
+
+    // Nesse momento lemos alguma coisa.   
+ 
+    //
+    // == Processing the request =============================
+    //
+ 
+    // Invalid request. Yield and clean.
+    if (message_buffer[1] == 0 ){
+        gwssrv_debug_print ("xxxHandleNextClientRequest: Invalid request!\n");
+        goto exit2;
+    }
+
+// #test
+// Input solicitado por um cliente
+// Isso deve acontecer quando o cliente chama alguma função
+// do tipo: gws_get_next_event() da libgws.
+// Em outro caso, no loop principal, esse servidor 
+// deve pegar os inputs vindos do sistema e colocar 
+// na fila de entrada do cliente com o foco de entrada.
+// o cliente com o foco de entrada possui a janela com 
+// o foco de entrada.
+
+    //
+    // == Got a request! ============
+    //
+
+    //debug_print ("xxxHandleNextClientRequest: Got a request!\n");
+    //debug_print ("xxxHandleNextClientRequest: Calling window procedure\n");
+
     // #todo
-    // Se estivermos em JAIL, podemos arriscar algum background melhor.
-    // Talvez alguma imagem.
+    // Dependendo do tipo de request, então construiremos
+    // a resposta ou prestatemos os serviço.
+    // Para cada tipo de request o servidor precisa construir
+    // uma resposta diferente.
+    // O request afeta os campos da mensagem.
+    // Esses campos estão em um buffer, mas poderiam estar
+    // em um arquivo json.
 
-    __root_window = (struct gws_window_d *) createwCreateWindow ( 
-                                            WT_SIMPLE, 
-                                            1, 1, "gwssrv-bg",  
-                                            0, 0, w, h,   
-                                            gui->screen_window, 0, 
-                                            COLOR_BACKGROUND, COLOR_BACKGROUND );    
+    // Types:
+    // + Null: fail.
+    // + Identify: The server needs to identify itself.
+    // + Get all objects:
+    // + Set inspected object:
+    // + Set property: Probably setting a property of an object.
+    // + Disconnect:
+    // ...
 
-    if ( (void *) __root_window == NULL )
+    // #debug: para a máquina real.
+    // printf ("gws: got a message!\n");
+    // printf ("gws: xxxGetNextClientRequest: calling window procedure \n");
+
+
+// Realiza o serviço.
+    gwsProcedure (
+       (struct gws_window_d *) message_buffer[0], 
+       (int)                   message_buffer[1], 
+       (unsigned long)         message_buffer[2], 
+       (unsigned long)         message_buffer[3] );
+
+    // #todo
+    // Se o request foi um request de evento,
+    // significa que o cliente deseja receber o próximo evento da 
+    // lista de eventos.
+    // podemos passar mensagens recebidas pelo gws para o cliente.
+
+    // ??
+    // espera ate conseguir enviar a resposta.
+    // o kernel precisa copiar para aquele conectado em accept[]
+
+//
+// == Sending reply =======================================
+//
+
+// Alguns requests nao exigem resposta,
+// Entao precisamos modificar a flag de sincronizaçao.
+// que ainda deve estar sinalizando um request.
+    
+    if (NoReply == TRUE){
+        rtl_set_file_sync( fd, SYNC_REQUEST_SET_ACTION, ACTION_NULL );
+        goto exit0;
+    }
+
+    //gwssrv_debug_print ("Sending response ...\n");  
+
+    //# it works.
+    char *m = (char *) (&__buffer[0] + 16);
+    sprintf( m, "~ Response from gwssrv \n");
+
+// Primeiros longs do buffer.
+    message_buffer[0] = next_response[0];         // Window ID.
+    message_buffer[1] = SERVER_PACKET_TYPE_REPLY; // next_response[1] 
+    message_buffer[2] = next_response[2];         // Return value (long1)
+    message_buffer[3] = next_response[3];         // Return value (long2)
+
+//__again:
+
+//
+// == Response ============================
+//
+
+    // gwssrv_debug_print ("xxxHandleNextClientRequest: Sending response ...\n");
+
+    // #todo:
+    // while(1){...}
+
+    /*
+    // Is current client connected.
+    if (currentClient->is_connected == 0)
     {
-        gwssrv_debug_print ("gwssrv: __root_window fail\n"); 
-        printf             ("gwssrv: __root_window fail\n");
-        exit (1);
-        return;
+        // [FAIL] Not connected.
+        // close?
+    }
+    */
+
+// set response
+    rtl_set_file_sync( fd, SYNC_REQUEST_SET_ACTION, ACTION_REPLY );
+
+//
+// Write
+//
+
+    n_writes = write ( fd, __buffer, sizeof(__buffer) );
+    //n_writes = send ( fd, __buffer, sizeof(__buffer), 0 );
+
+    // limpa.
+    // se a resposta der certo ou se der errado.
+
+    // Cleaning
+    message_buffer[0] = 0;
+    message_buffer[1] = 0;
+    message_buffer[2] = 0;
+    message_buffer[3] = 0;
+    register int b=0;
+    for (b=0; b<MSG_BUFFER_SIZE; ++b){
+        __buffer[b] = 0;
+    };
+
+    // Cleaning
+    // 32. #todo 512.
+    register int c=0;
+    for (c=0; c<NEXTRESPONSE_BUFFER_SIZE; ++c){
+        next_response[c] = 0;
+    };
+
+    // No. We couldn't send a response.
+    // O que acontece se nao conseguirmos enviar uma resposta?
+    // Certamente o cliente tentara ler e tera problemas.
+    // Deveriamos fechar a conexao?
+    // Deveriamos enviar um alerta
+    
+    if (n_writes<=0){
+        gwssrv_debug_print ("xxxHandleNextClientRequest:  response fail\n");
+        printf("gwssrv-xxxHandleNextClientRequest: Couldn't send reply\n");
+        //close(fd);
+        goto exit2;
     }
 
-    // Register.
-    WindowId = gwsRegisterWindow (__root_window);
-
-    if (WindowId<0){
-        gwssrv_debug_print ("create_background: Couldn't register window\n");
-        //return;
+    // YES, We sent a response.
+    if (n_writes>0){
+       gwssrv_debug_print ("xxxHandleNextClientRequest: Response sent\n");
+        goto exit0;
     }
 
-    //__root_window->dirty = 1;
+    // ??
 
-    if (current_mode == GRAMADO_JAIL){
-        refresh_screen();
-    }
-
-    //#debug
-    //while(1){}
+exit2:
+    message_buffer[0] = 0;
+    message_buffer[1] = 0;
+    message_buffer[2] = 0;
+    message_buffer[3] = 0;
+    message_buffer[4] = 0;
+    message_buffer[5] = 0;
+exit1:
+    gwssrv_yield();
+exit0:
+    return;
 }
 
 
 
+//
+// $
+// GRAPHICS
+//
+
 /*
- ****************************** 
  * initGraphics:
  *     Initialize the graphics support.
  */
-
 // Initialize the window server infrastructure.
 // The current display and the current screen.
 // Initialize the 3d support.
 
-int initGraphics (void){
-
+int initGraphics (void)
+{
     int __init_status = -1;
-
 
     debug_print("initGraphics\n");
 
@@ -1669,489 +2124,12 @@ int initGraphics (void){
 }
 
 
-// Initialize the client list.
-// This is an array of connections.
-// See: clients.h
-
-void gwssrv_init_client_support (void)
-{
-    int i=0;
-
-
-    gwssrv_debug_print ("gwssrv_init_client_support:\n");
-
-    for (i=0; i<CLIENT_COUNT_MAX; i++)
-    {
-        connections[i] = 0;
-    };
- 
- 
 //
-// The current client
+// $
+// MAIN - Initialization and loop.
 //
 
-    currentClient = (struct gws_client_d *) 0;
-    
-    
-    // The server client.
-    serverClient = (struct gws_client_d *) malloc ( sizeof( struct gws_client_d ) );
-    if ( (void *) serverClient == NULL ){
-        gwssrv_debug_print ("gwssrv_init_client_support: [FATAL] Couldn't create serverClient\n");
-        printf             ("gwssrv_init_client_support: [FATAL] Couldn't create serverClient\n");
-        exit(1);
-    }else{
-        serverClient->id = 0;
-        serverClient->used  = TRUE;
-        serverClient->magic = 1234;
-        serverClient->is_connected = FALSE;
-        serverClient->fd = -1;
-        serverClient->pid = getpid();
-        serverClient->gid = getgid();
-        // ...
-
-        // #todo
-        // Limpar a fila de mensagens para esse cliente.
-        
-        for (i=0; i<CLIENT_COUNT_MAX; i++)
-        {
-            serverClient->window_list[i] = 0;
-            serverClient->msg_list[i]    = 0;
-            serverClient->long1_list[i]  = 0;
-            serverClient->long2_list[i]  = 0;
-        };
-        serverClient->tail_pos = 0;
-        serverClient->head_pos = 0;
-        
-        // ...
-
-        connections[SERVER_CLIENT_INDEX] = (unsigned long) serverClient;
-    };
-}
-
-
-void init_client_struct ( struct gws_client_d *c )
-{
-    int i=0;
-
-
-    if ( (void*) c == NULL )
-    {
-        gwssrv_debug_print("init_client_struct: c fail\n");
-        return;
-    }
-
-
-    c->id = -1;  //fail
-
-    c->used  = TRUE;
-    c->magic = 1234;
-    c->is_connected = FALSE;
-    c->fd  = -1;
-    c->pid = -1;
-    c->gid = -1;
- 
-    for (i=0; i<CLIENT_COUNT_MAX; i++)
-    {
-        c->window_list[i] = 0;
-        c->msg_list[i]    = 0;
-        c->long1_list[i]  = 0;
-        c->long2_list[i]  = 0;
-    };
-    c->tail_pos = 0;
-    c->head_pos = 0;
-}
-
 /*
- //Send the message in the buffer to all the clients.
- //This is a great opportunity to shutdown the clients
- //if it is not connected.
-
-void gwssrv_message_all_clients(void);
-void gwssrv_message_all_clients(void)
-{
-}
-*/
-
-// When a client send us an event
-int serviceClientEvent(void)
-{
-    //O buffer é uma global nesse documento.
-    unsigned long *message_address = (unsigned long *) &__buffer[0];
-
-    unsigned long window =0;
-    unsigned long msg    =0;
-    unsigned long long1  =0;
-    unsigned long long2  =0;
-
-    //struct gws_client_d *client;
-    //struct gws_window_d *hWindow;
-    //struct gws_event_d  *event;
-    //...
-
-
-    window  = message_address[0]; 
-    msg     = message_address[1]; 
-    long1   = message_address[2]; 
-    long2   = message_address[3]; 
-
-    //z      = message_address[4]; 
-    //z      = message_address[5]; 
-    //z      = message_address[6]; 
-    //z      = message_address[7]; 
-    // ...
-
-    // ...
-
-    return -1;
-}
-
-
-// When a client get the next event from it's own queue.
-int serviceNextEvent (void)
-{
-    //O buffer é uma global nesse documento.
-    unsigned long *message_address = (unsigned long *) &__buffer[0];
-
-    unsigned long window =0;
-    unsigned long msg    =0;
-    unsigned long long1  =0;
-    unsigned long long2  =0;
-
-
-    //struct gws_client_d *client;
-    //struct gws_window_d *hWindow;
-    //struct gws_event_d  *event;
-    //...
-
-
-    //printf ("serviceNextEvent: \n");
-
-    window  = message_address[0]; 
-    msg     = message_address[1]; 
-    long1   = message_address[2]; 
-    long2   = message_address[3]; 
-
-    //z      = message_address[4]; 
-    //z      = message_address[5]; 
-    //z      = message_address[6]; 
-    //z      = message_address[7]; 
-    // ...
-
-    // ...
-
-    return -1;
-}
-
-
-// #todo
-// Close all the clients and close the server.
-void serviceExitGWS(void)
-{
-    printf ("serviceExitGWS: \n");
-    
-    // Kill all the clients.
-    printf ("[TODO] Kill all the clients\n");
-
-    // #todo
-    // Deallocate resources used by the server.
-
-    // Close the server.
-    printf ("[TODO] Close all the clients\n");
-    exit(0);
-}
-
-
-
-int servicePutClientMessage(void)
-{
-    unsigned long *message_address = (unsigned long *) &__buffer[0];
-    
-    
-    int           window = 0;
-    int           msg    = 0;  // msg = Put message
-    unsigned long long1  = 0;  // client id
-    unsigned long long2  = 0;
-    // ...
-
-
-    struct gws_client_d *client;
-    int client_id = -1;
-    //
-    // parameters
-    //
-
-    window = (int)           message_address[0];
-    msg    = (int)           message_address[1];
-    long1  = (unsigned long) message_address[2]; 
-    long2  = (unsigned long) message_address[3];
-    //...
-
-
-    // Check the message code.
-    if ( msg != GWS_PutClientMessage )
-    {
-        return -1;
-    }
-
-    // Get the client id.
-
-    client_id = (int) long1;
-
-    if (client_id<0 || client_id >= CLIENT_COUNT_MAX)
-    {
-        return -1;
-    }
-
-    client = (struct gws_client_d *) connections[client_id];
-    
-    if ( (void*) client == NULL )
-        return -1;
-    
-    if ( client->used != NULL || client->magic != 1234 )
-    {
-        return -1;
-    }
-    
-    client->tail_pos++;
-    if ( client->tail_pos >= 32 )
-    {
-        client->tail_pos = 0;
-    }
-    
-    int Slot = (int) client->tail_pos;
-    
-    client->window_list[Slot] = (int) window;
-    client->msg_list[Slot]    = (int) msg;
-    client->long1_list[Slot]  = (unsigned long) long1;
-    client->long2_list[Slot]  = (unsigned long) long2;
-    // ...
-    
-    message_address[0] = 0;
-    message_address[1] = 0;
-    message_address[2] = 0;
-    message_address[3] = 0;
-    
-    return 0;
-}
-
-
-
-int serviceGetClientMessage(void)
-{
-    unsigned long *message_address = (unsigned long *) &__buffer[0];
-    
-    
-    int           window = 0;
-    int           msg    = 0;  // msg = Put message
-    unsigned long long1  = 0;  // client id
-    unsigned long long2  = 0;
-    // ...
-
-
-    struct gws_client_d *client;
-    int client_id = -1;
-    //
-    // parameters
-    //
-
-    window = (int)           message_address[0];
-    msg    = (int)           message_address[1];
-    long1  = (unsigned long) message_address[2]; 
-    long2  = (unsigned long) message_address[3];
-    //...
-
-    // Check the message code.
-    if ( msg != GWS_GetClientMessage )
-    {
-        return -1;
-    }
-
-    // Get the client id.
-
-    client_id = (int) long1;
-
-    if (client_id<0 || client_id >= CLIENT_COUNT_MAX)
-    {
-        return -1;
-    }
-
-    client = (struct gws_client_d *) connections[client_id];
-    
-    if ( (void*) client == NULL )
-        return -1;
-    
-    if ( client->used != NULL || client->magic != 1234 )
-    {
-        return -1;
-    }
-    
-    client->head_pos++;
-    if ( client->head_pos >= 32 )
-    {
-        client->head_pos = 0;
-    }
-
-    int Slot = (int) client->tail_pos;
-    
-    message_address[0] = client->window_list[Slot];
-    message_address[1] = client->msg_list[Slot];
-    message_address[2] = client->long1_list[Slot];
-    message_address[3] = client->long2_list[Slot];
-    // ...
-    
-    return 0;
-}
-
-
-
-
-// No response.
-int serviceAsyncCommand (void)
-{
-    //O buffer é uma global nesse documento.
-    unsigned long *message_address = (unsigned long *) &__buffer[0];
-
-
-
-    // int window_id=0;
-    unsigned long message_id =0;
-    unsigned long request_id =0;
-    unsigned long subrequest_id = 0;
-    unsigned long Data = 0;
-
-    //
-    // parameters
-    //
-
-    // window_id   = message_address[0];
-    message_id     = message_address[1];   // message
-    request_id     = message_address[2]; 
-    subrequest_id  = message_address[3];
-    Data           = message_address[4];
-
-
-    // ...
-
-
-    // Validate our message number.
-
-    if (message_id != 2222)
-    {
-        gwssrv_debug_print ("serviceAsyncCommand: [ERROR] message id\n");
-                    printf ("serviceAsyncCommand: [ERROR] message id\n");
-        return -1;
-    }
-
-
-    // #debug
-    // printf ("serviceAsyncCommand: [request %d] \n", request_id);
- 
-    switch (request_id){
-
-        // 1 =  Exit GWS
-        // #todo:
-        // Close all the clients and close the server.
-        case 1:
-            gwssrv_debug_print ("serviceAsyncCommand: [request 1]  Exit GWS\n");
-                        //printf ("serviceAsyncCommand: [request 1] Closing server\n");
-            printf("serviceAsyncCommand: Exit GWS\n");
-            serviceExitGWS();
-            printf("serviceAsyncCommand: [FAIL] fail when closing the GWS\n");
-            exit(0);
-            break;
-
-        case 2:
-            gwssrv_debug_print ("serviceAsyncCommand: [request 2] \n");
-            printf("PING\n");
-            //Notify_CloseClient = TRUE;
-            //Notify_PongClient = TRUE;
-            //exit(0);
-            return 0;
-            break;
-
-        case 3:
-            gwssrv_debug_print ("serviceAsyncCommand: [request 3] hello\n");
-            printf("HELLO\n");
-            //exit(0);
-            return 0;
-            break;
-        
-        // See: demos.c
-        case 4:
-            if (current_mode == GRAMADO_JAIL)
-            {
-                gwssrv_debug_print("serviceAsyncCommand: [request 4] demo\n"); 
-                demos_startup_animation(subrequest_id);
-                gwssrv_show_backbuffer();
-                return 0;
-            }
-            break;
-
-        // Draw black rectangle.
-        case 5:
-           if (current_mode == GRAMADO_JAIL)
-           {
-               rectBackbufferDrawRectangle ( 
-                   0, 0, 320, 200, COLOR_BLACK, 1 );
-               return 0;
-           }
-           break;
-
-        // Setup if we will show or not the 'fps window'.
-        case 6:
-            if( subrequest_id == TRUE )
-            {
-                show_fps_window = TRUE;
-                return 0;
-            }
-            show_fps_window = FALSE;
-            break;
-
-         // Register wm pid
-         case 7:
-            gwssrv_debug_print ("serviceAsyncCommand: [7] Register wm pid\n");
-             //printf ("serviceAsyncCommand: [7] [BREAKPOINT] Register wm pid\n");
-             ____saved_wm_magic_pid = (int) Data;
-             //exit(0);
-             return 0;
-             break;
-             
-        // 8
-        // Window Manager requests. Power Trio.
-        // As mensages aqui interessam somente ao window manager
-        // que esta dentro do window server.
-        case 8:
-            printf ("serviceAsyncCommand: [8] \n");
-            if (subrequest_id = 1)
-            {
-                
-                //exit(0);
-            }
-            break;
-            
-
-        // ...
-                
-        default:
-            gwssrv_debug_print ("serviceAsyncCommand: [ERROR] bad request\n");
-                     // printf ("serviceAsyncCommand: [ERROR] bad request\n");
-            // return -1;
-            break;
-    };
-
-    return -1;
-}
-
-
-
-char *gwssrv_get_version(void)
-{
-    return VERSION;
-}
-
-
-/*
- ******************************
  * main: 
  *     + Initializes the gws infrastructure.
  *     + Create the background.
@@ -2503,6 +2481,8 @@ int main (int argc, char **argv)
  
         while (running == TRUE)
         {
+            //if (isTimeToQuit == 1) { break; };
+
             // Se tem ou não retângulos sujos.
             // #bugbug: Talvez isso seja trabalho do window manager.
             // mas ele teria que chamar o window server pra efetuar o refresh
@@ -2513,52 +2493,30 @@ int main (int argc, char **argv)
                 compositor();
             }
 
-            //process_events(); //todo
-
-            //if (isTimeToQuit == 1) { break; };
+            // todo
+            // process_events();
 
             // Accept connection from a client.
-
             // Se nao estamos aceitqando conexoes.
 
             newconn = accept ( 
                           serverClient->fd, 
                           (struct sockaddr *) &server_address, 
                           (socklen_t *) addrlen );
-            
-            //gwssrv_debug_print("gwssrv: accept returned\n");
-            //printf ("gwssrv: newconn %d\n",newconn);
 
-            if (newconn<=0){
-                gwssrv_debug_print("gwssrv: accept returned FAIL\n");
+            if (newconn <= 0){
+                // gwssrv_debug_print("gwssrv: accept returned FAIL\n");
             }
 
             // if (newconn>0 && AcceptingConnections)
-            if (newconn>0)
+            if (newconn > 0)
             {
-                gwssrv_debug_print("gwssrv: accept returned OK\n");
-                xxxHandleNextClientRequest (newconn);
-      
-                // #??
-                // Entao nos lemos o socket e escrevemos no socket.
-                // precisamos dar um tempo para o cliente ler,
-                // e nao simplesmente aceitarmos a proxima conexao pendente.
-                
-                //gwssrv_yield();
-                //gwssrv_yield();
-                //gwssrv_yield();
-                //gwssrv_yield();
-                
+                //gwssrv_debug_print("gwssrv: accept returned OK\n");
+                xxxHandleNextClientRequest (newconn);                
                 //close(newconn);
             }
         };
-
         // ...
-        
-        //
-        // =======================================
-        //
-  
     }; // Main loop
     //====================
     //--
@@ -2609,13 +2567,5 @@ int main (int argc, char **argv)
     //suspended.
     return 0; 
 }
-
-
-// yield thread.
-void gwssrv_yield(void)
-{
-    sc82(265,0,0,0);
-}
-
 
 

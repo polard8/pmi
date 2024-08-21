@@ -1,4 +1,5 @@
 // comp.c
+// Created by Fred Nora.
 
 
 // window server routines.
@@ -9,11 +10,6 @@
 // int gUseSomething = TRUE;
 // ...
 
-/*
- * compositor:
- * 
- * 
- */
 
 // Respeitando a z-order.
 // #todo.
@@ -26,25 +22,20 @@
 // Teremos o depth-buffer para janelas e não par aa tela toda.
 // Poderemos usar janelas em full screen.
 // Clipping window.
+// ---------------
+// + repinta as janelas.
+// + refresh nos retangulos ou tela toda.
+// + rasterization.
+// + raytracing.
 
 void compositor (void)
 {
-    // + repinta as janelas.
-    // + refresh nos retangulos ou tela toda.
-    // + rasterization.
-    // + raytracing.
+    // gwssrv_debug_print("compositor:\n");
 
-    gwssrv_debug_print("compositor:\n");
-
-    // Repinta as janelas e refresh nos retangulos ou tela toda.
-    // See: wm.c
-
+// Repinta as janelas e refresh nos retangulos ou tela toda.
+// See: wm.c
     wm_process_windows();
-    
-    // rasterization();
 
-    // raytracing();
-
-    gwssrv_debug_print("compositor: done\n");
+    // gwssrv_debug_print("compositor: done\n");
 }
 

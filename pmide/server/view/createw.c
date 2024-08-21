@@ -1,21 +1,17 @@
 /*
- * File: createw.c 
- * 
- *      Creates a window.
- *      It's part of the gws project.
- * 
- * History:
+ * createw.c 
+ *     Creates a window.
+ *     It's part of the gws project.
  *     2019 - Created by Fred Nora.
  */
  
-    // #importante
-    // O frame de uma janela deve ser parte do Window Manager.
+// #importante
+// O frame de uma janela deve ser parte do Window Manager.
 
 // #bugbug
 // #todo
 // Para lidarmos com essas estruturas do kernel
 // devemos usar a chamada sci2. int 0x82. ??
-
 
 // todo
 // Quando estivermos contrindo as molduras das janelas,
@@ -31,9 +27,7 @@
 // do window manager.
 
 
-
 #include <gws.h>
-
 
 // habilitando/desabilitando globalmente 
 // alguns componentes da janela
@@ -79,13 +73,8 @@ void useFrame( int value )
 */
 
 
-
-
-
 /*
- *************************************************************
  * xxxCreateSurfaceWindow: 
- * 
  *     Cria uma janela com base em uma struct.
  *     Retorna o endereço da estrutura da janela criada. 
  *     Para que possa ser registrada na lista windowList[].
@@ -103,9 +92,7 @@ void useFrame( int value )
  * 8 - TASKBAR.
  * 9 - ? 
  * CONTINUA ...
- *
  */
-
 
 void *xxxCreateSurfaceWindow( 
     unsigned long type,        // 1, Tipo de janela (popup,normal,...)
@@ -132,10 +119,7 @@ void *xxxCreateSurfaceWindow(
 	// #importante: Isso está funcionado, Vamos fazer assim e 
 	// não do jeito antigo.
 
-
 	unsigned long message_buffer[12];
-
-
 
     gwssrv_debug_print ("xxxCreateSurfaceWindow: \n");
 
@@ -1613,28 +1597,17 @@ void *xxxCreateWindow (
     return (void *) window;
 }
 
-
-
-
-
 /*
- ******************************************************
  * createwCreateWindow:
- * 
  *     It creates a window
  */
-
-
 // Essa será a função que atenderá a interrupção
 // esse é o serviço de criação da janela.
 // talvez ampliaremos o número de argumentos
-
 // #todo
 // Precisamos de uma estrutura de janela que fique aqui
 // no servidor.
-// Não podemos usar a estrutura de janela
-// da api.
-
+// Não podemos usar a estrutura de janela da api.
 // #todo: change name to 'const char *'
 
 void *createwCreateWindow ( 
@@ -1654,7 +1627,6 @@ void *createwCreateWindow (
 
    struct gws_window_d  *__w;
 
-
     // This function is able to create some few 
     // kinds of windows for now:
     // overlapped, editbox, button and simple.
@@ -1672,8 +1644,6 @@ void *createwCreateWindow (
         gwssrv_debug_print ("createwCreateWindow: Invalid type\n");
         return NULL;
     }
-
-
 
     //1. Começamos criando uma janela simples
     //2. depois criamos o frame. que decide se vai ter barra de títulos ou nao.
@@ -1700,8 +1670,9 @@ void *createwCreateWindow (
     //if ( (void*) windowname == NULL ){}
     //if ( *windowname == 0 ){}
 
-    // Overlapped
-    if ( type == WT_OVERLAPPED )
+// -----------------------
+// Overlapped
+    if (type == WT_OVERLAPPED)
     {
         __w = (void *) xxxCreateWindow ( 
                            WT_SIMPLE, status, view, 
@@ -1720,12 +1691,12 @@ void *createwCreateWindow (
         goto draw_frame;
     }
 
-
     // #todo
     // It does not exist by itself. It needs a parent window.
-    
-    //edit box
-    if ( type == WT_EDITBOX )
+
+// -----------------------    
+// edit box
+    if (type == WT_EDITBOX)
     {
         //if ( (void*) pWindow == NULL ){ return NULL; }
         
@@ -1747,12 +1718,12 @@ void *createwCreateWindow (
         goto draw_frame;
     }
 
-
     // #todo
     // It does not exist by itself. It needs a parent window.
 
-    //button
-    if ( type == WT_BUTTON )
+// -----------------------
+// button
+    if (type == WT_BUTTON)
     {
         gwssrv_debug_print ("[DEBUG]: createwCreateWindow WT_BUTTON\n");
       
@@ -1776,8 +1747,8 @@ void *createwCreateWindow (
         goto draw_frame;
     }
 
-
-    // Types with no frame!
+// -----------------------
+// Types with no frame!
     if ( type == WT_SIMPLE )
     {
         __w = (void *) xxxCreateWindow ( 
@@ -1800,14 +1771,14 @@ void *createwCreateWindow (
     return NULL;
     
     
-    //
-    // == Draw frame ===============================
-    //
+//
+// == Draw frame ===============================
+//
     
-    // #todo:
-    // Lembrando que frame é coisa do wm.
-    // Porém tem algumas coisas que o window server faz,
-    // como as bordas de um editbox.
+// #todo:
+// Lembrando que frame é coisa do wm.
+// Porém tem algumas coisas que o window server faz,
+// como as bordas de um editbox.
 
 draw_frame:
 
@@ -1856,8 +1827,6 @@ draw_frame:
 
 //draw_v_scrollbar:
 // ...
-
-
 
 //
 // z order for overlapped.
@@ -1910,19 +1879,17 @@ draw_frame:
 
 // Create root window
 // Called by gwsInit in gws.c.
-
 struct gws_window_d *createwCreateRootWindow(void)
 {
     struct gws_window_d *w;
-
 
     unsigned long left   = 0;
     unsigned long top    = 0;
     unsigned long width  = __device_width;
     unsigned long height = __device_height;
 
-    // (root window)
-    // #bugbug: EStamos usado device info sem checar.
+// (root window)
+// #bugbug: EStamos usado device info sem checar.
     
     w = (struct gws_window_d *) createwCreateWindow ( 
                                     WT_SIMPLE,  1, 1, "RootWindow",  
@@ -1946,19 +1913,13 @@ struct gws_window_d *createwCreateRootWindow(void)
         //return;
         //}
 
-
-    // Root window
+// Root window
     gwsDefineInitialRootWindow (w);
-
 
     return (struct gws_window_d *) w;
 }
 
-
-
 //
-// End.
+// End
 //
-
-
 
