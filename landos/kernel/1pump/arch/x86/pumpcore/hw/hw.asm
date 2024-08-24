@@ -1,9 +1,9 @@
 ;
 ; File: x86/pumpcore/hw.inc 
 ;
-; Descrição:
-;     Interrupções de hardware.
-;     Irqs e interrupções reservadas (faults,etc).
+; Descriï¿½ï¿½o:
+;     Interrupï¿½ï¿½es de hardware.
+;     Irqs e interrupï¿½ï¿½es reservadas (faults,etc).
 ;     Ordem: Primeiro as irqs, depois as outras.
 ;
 ; History:
@@ -71,7 +71,7 @@ extern _psTaskSwitch
 
 
 ;; @todo:
-;;?? Em que arquivo está essa função ??
+;;?? Em que arquivo estï¿½ essa funï¿½ï¿½o ??
 extern _current_process_pagedirectory_address
 ;;...
 
@@ -95,15 +95,15 @@ extern _current_process_pagedirectory_address
 global _irq0
 _irq0:
 
-    cli
-    
-    ; No caso do dispatcher lançar uma nova thread,
-    ; então ele deve acionar enviar um EIO.
-    ; mov dword [_irq0PendingEOI], 1
+; We don't need to disable it,
+; 'cause we're using interrupt gate, and the system
+; disable the interrupt for us.
 
-    ;; == Save context ====================
+    cli
+
+; == Save context ====================
     
-    ;; Stack frame. (all double)
+    ; Stack frame. (all double)
     pop dword [_contextEIP]     ; eip
     pop dword [_contextCS]      ; cs
     pop dword [_contextEFLAGS]  ; eflags
@@ -129,14 +129,14 @@ _irq0:
     mov ax, ds
     mov word [_contextDS], ax
 
-    ;; #todo
-    ;; Media, float pointers, debug.
+    ; #todo
+    ; Media, float pointers, debug.
 
-    ;; #important:
-    ;; We are using the kernel segment registers.
-    ;; Kernel data segments and stack.
-    ;; #bugbug: sempre a mesma pilha?
-    ;; Que pilha as interrupçoes de softwar estao usando?
+; #important:
+; We are using the kernel segment registers.
+; Kernel data segments and stack.
+; #bugbug: sempre a mesma pilha?
+; Que pilha as interrupï¿½oes de softwar estao usando?
 
     xor eax, eax
     mov ax, word KERNEL_DS
@@ -148,26 +148,24 @@ _irq0:
     mov eax, 0x003FFFF0 
     mov esp, eax
 
-    ;; Timer support. No task switch.
+; Timer support. No task switch.
     call _irq0_TIMER
 
-    ;; Task switching.
+; Task switching.
     call _psTaskSwitch
 
     ;Flush TLB.
     jmp dummy_flush
     ;; NOP
 dummy_flush:
+
     mov EAX, CR3  
+    IODELAY
+    IODELAY
     IODELAY 
-    nop
-    nop
-    nop
-    nop
-    nop
     mov CR3, EAX  
 
-    ;; == Restore context ====================
+; == Restore context ====================
 
     ; Segments
     xor eax, eax
@@ -200,11 +198,7 @@ dummy_flush:
     out 20h, al  
     IODELAY  
 
-    ;; variável usada pelo dispatcher.
-    ;mov dword [_irq0PendingEOI], 0
-
-
-    ; Acumulator.
+; Acumulator
     mov eax, dword [_contextEAX]
 
     ;; #bugbug
@@ -231,8 +225,6 @@ timer_interrupt:
     jmp $
 
 
-
-
 ;; ??
 ;; #todo:
 ;; Move these thing to another place.
@@ -242,22 +234,21 @@ _currentTask:
 _nextTask:
     dd 0
 _stackPointers: 
-    times 512 dd 0    ;;@todo: Isso é útil ?
-
-
-
+    times 512 dd 0    ;;@todo: Isso ï¿½ ï¿½til ?
 
 
 ;========================================
 ; _irq1:
 ;     IRQ 1 - Keyboard.
-;
 ; See:
 ; 2io/dev/tty/chardev/hid/i8042/keyboard.c
 ;
 
 global _irq1  
 _irq1:
+
+; #todo:
+; Here we need to build a routine similar to the irq0.
 
     cli
 
@@ -313,7 +304,7 @@ _irq1:
 
 
 ;=======================================
-; _irq2 - IRQ 2 – cascaded signals from IRQs 8–15 
+; _irq2 - IRQ 2 ï¿½ cascaded signals from IRQs 8ï¿½15 
 ; (any devices configured to use IRQ 2 will actually be using IRQ 9)
 ;
 ; Nothing.
@@ -385,7 +376,7 @@ _irq4:
 
 
 ;--------------
-; IRQ 6 – floppy disk controller
+; IRQ 6 ï¿½ floppy disk controller
 ;_irq6:
 ;    iretd
 
@@ -540,10 +531,15 @@ _irq10:
 
 
 ;;===============================================
-;;  interrupção 41. irq 9;
+;;  interrupï¿½ï¿½o 41. irq 9;
 
 global _nic_handler
 _nic_handler:
+
+; #todo:
+; Here we need to build a routine similar to the irq0.
+; It will make the system more stable.
+
     cli
     pushad
 
@@ -668,7 +664,7 @@ _irq13:
 
 ;============================================
 ; _irq14:
-;     Tratador de interrupções para unidade master.
+;     Tratador de interrupï¿½ï¿½es para unidade master.
 ;     IRQ 14 - primary ATA channel 
 ;     ( ATA interface usually serves hard disk drives and CD drives ) 
 ;     O timer precisa ser desbilitado. ??
@@ -701,7 +697,7 @@ _irq14:
 
 ;=================================================	
 ; _irq15:
-;     Tratador de interrupções para unidade slave.
+;     Tratador de interrupï¿½ï¿½es para unidade slave.
 ;     IRQ 15 - secondary ATA channel
 ;     O timer precisa ser desbilitado. ??
 
@@ -747,11 +743,11 @@ _irq15:
 
 ;========================================
 ; unhandled_irq:
-;     Interrupção de hardware genérica. 
+;     Interrupï¿½ï¿½o de hardware genï¿½rica. 
 ;++ 
 
 ;; #bugbug
-;; Não podemos efetuar EOI para todos 
+;; Nï¿½o podemos efetuar EOI para todos 
 ;; somente para as irqs.
 
 unhandled_irq:
@@ -788,9 +784,9 @@ extern _faults
 
 ;
 ; Obs: 
-; Enquanto tratamos uma excessão ou fault, não desejamos
-; que uma interrupção de timer atrapalhe, então vamos desabilitar
-; as interrupções.
+; Enquanto tratamos uma excessï¿½o ou fault, nï¿½o desejamos
+; que uma interrupï¿½ï¿½o de timer atrapalhe, entï¿½o vamos desabilitar
+; as interrupï¿½ï¿½es.
 ;
 
 ;
@@ -837,7 +833,7 @@ _fault_N5:
     jmp all_faults
 
 ;
-; int 6 - Instrução inválida.
+; int 6 - Instruï¿½ï¿½o invï¿½lida.
 global _fault_INTRUCAO_INVALIDA
 _fault_INTRUCAO_INVALIDA:
     mov dword [save_fault_number], dword 6
@@ -879,7 +875,7 @@ _fault_N11:
     jmp all_faults
 
 ;
-; int 12 - Falha de pilha (interrupção 12).
+; int 12 - Falha de pilha (interrupï¿½ï¿½o 12).
 global _fault_STACK
 _fault_STACK:
     mov dword [save_fault_number], dword 12
@@ -1021,11 +1017,11 @@ _fault_N31:
 
 ;===============================================
 ; all_faults:
-;     As faltas são tratadas em kernel mode, tem que ajustar 
+;     As faltas sï¿½o tratadas em kernel mode, tem que ajustar 
 ; os registradores para isso.
 ;     
 ; #todo: 
-; Enviar o número a falta para uma variável global.
+; Enviar o nï¿½mero a falta para uma variï¿½vel global.
 ; Essa rotina poderia se chamar hwAllFaults.
 ;
 
@@ -1066,8 +1062,8 @@ all_faults:
     ; No caso de der falha no primeiro salto para ring3:
     ; Pegamos esses valores da pilha.
     ; Mas precisamos saber se esses valores refletem
-    ; a parte do código que estava executando na hora da falha,
-    ; ou se é o valor configurado antes do primeiro salto para ring3.
+    ; a parte do cï¿½digo que estava executando na hora da falha,
+    ; ou se ï¿½ o valor configurado antes do primeiro salto para ring3.
     
 	pop eax
 	mov dword [_contextEIP], eax
@@ -1093,21 +1089,21 @@ all_faults:
     mov gs, ax
     
     ;; ??
-    ;; e a stack, ainda não tínhamos colocado uma configuração de
+    ;; e a stack, ainda nï¿½o tï¿½nhamos colocado uma configuraï¿½ï¿½o de
     ;; stack aqui.
     
     ;; #todo #todo #todo STACK STACK STACK
 
     
     ;;
-    ;; O número da falta.
+    ;; O nï¿½mero da falta.
     ;;
     
     ; Chama a rotina em C.
     ; Passa o argumento via pilha.
     push dword [save_fault_number]
 
-    ; Chama código em C. (faults.c)
+    ; Chama cï¿½digo em C. (faults.c)
     call _faults 
 ;.Lhang
 .hang:
@@ -1117,9 +1113,9 @@ all_faults:
 
 
 ; @todo: 
-;     Existe ERROR NUMBER em algumas exceções ?
+;     Existe ERROR NUMBER em algumas exceï¿½ï¿½es ?
 
-;Salva aqui o número da fault.	
+;Salva aqui o nï¿½mero da fault.	
 save_fault_number: 
     dd 0
 

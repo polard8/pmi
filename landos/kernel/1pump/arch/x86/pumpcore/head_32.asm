@@ -146,13 +146,10 @@ not_reached_loop:
     %include "head/head.asm" 
     %include "head/headlib.asm" 
 
-; Interrupções de hardware (irqs) e faults.
-
+; Hw interrupts and faults.
     %include "hw/hw.asm"
     %include "hw/hwlib.asm"
-
-; Interrupções de software.
-
+; Sw interrupts;
     %include "sw/sw.asm"
     %include "sw/swlib.asm"
 

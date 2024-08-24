@@ -99,25 +99,23 @@ extern unsigned long stack0_krn_ptr;
 // (NT)
 // Land OS headers.
 
-// oh boy
-#include "land/0boy/0boy.h"
 
-// config
-#include "land/0config/version.h"    // Product. 
-#include "land/0config/u.h"          // User
-#include "land/0config/config.h"     // Compiling.
+// config/
+#include "config/version.h"    // Product. 
+#include "config/u.h"          // User
+#include "config/config.h"     // Compiling.
 
 // globals
-#include "land/0globals/limits.h"
-#include "land/0globals/gpa.h"
-#include "land/0globals/gva.h"
-#include "land/0globals/gentry.h"
-#include "land/0globals/gdef.h"
-#include "land/0globals/gdevice.h"
-#include "land/0globals/gobject.h"
-#include "land/0globals/gspin.h"
-#include "land/0globals/ginput.h"  // input manager support.
-#include "land/0globals/gwd.h"     // whatch dogs
+#include "limits.h"
+#include "gpa.h"
+#include "gva.h"
+#include "gentry.h"
+#include "gdef.h"
+#include "gdevice.h"
+#include "gobject.h"
+#include "gspin.h"
+#include "ginput.h"  // input manager support.
+#include "gwd.h"     // whatch dogs
 
 
 // rtl 
@@ -176,27 +174,25 @@ extern unsigned long stack0_krn_ptr;
 #include "user/view/bmp2.h"
 
 // hal
-#include "hal/portsx86.h"
+#include "../1pump/arch/x86/portsx86.h"
 #include "hal/halvid.h"
 #include "hal/halmm.h"
 #include "hal/cpu.h"
-#include "hal/pte.h"
-#include "hal/tss.h" 
+#include "../1pump/arch/x86/pte.h"
+#include "../1pump/arch/x86/tss.h" 
 #include "hal/cputypes.h"
-#include "hal/x86pte.h"
-#include "hal/x86.h"
-#include "hal/x86iv.h"
-#include "hal/x86gdt.h"
+#include "../1pump/arch/x86/x86pte.h"
+#include "../1pump/arch/x86/x86.h"
+#include "../1pump/arch/x86/x86iv.h"
+#include "../1pump/arch/x86/x86gdt.h"
 #include "hal/cpuamd.h"
 #include "hal/dmi.h"
 #include "hal/detect.h"
 #include "hal/dev/tty/serial.h"
 
-
 //todo: 
 // podemos mover isso de lugar para perto de net/
 #include "rtl/net/mac.h"
-
 
 
 // hal/dev/blkdev
@@ -208,13 +204,11 @@ extern unsigned long stack0_krn_ptr;
 #include "hal/dev/blkdev/storage.h" 
 
 // hal
-#include "hal/pit.h"
-#include "hal/pic.h"
-#include "hal/apic.h"
+#include "../1pump/arch/x86/pit.h"
+#include "../1pump/arch/x86/pic.h"
+#include "../1pump/arch/x86/apic.h"
 #include "hal/cpuid.h"
-#include "hal/rtc.h"
-
-
+#include "../1pump/arch/x86/rtc.h"
 
 // rawgr - window server
 // inputs
@@ -231,15 +225,13 @@ extern unsigned long stack0_krn_ptr;
 #include "hal/dev/blkdev/ide.h"
 
 //pci
-//#include "hal/bus/isa.h"   //#todo
-#include "hal/bus/pci.h"
+#include "../2io/bus/pcibus/pci.h"
 
 //storage (^)
 #include "hal/dev/blkdev/ahci.h"
 #include "hal/dev/blkdev/sata.h"
 
-#include "hal/bus/usb.h"
-
+#include "../2io/bus/usbbus/usb.h"
 
 #include "hal/up.h"
 #include "hal/mp.h"
@@ -328,11 +320,8 @@ extern unsigned long stack0_krn_ptr;
 #include "rtl/net/udp.h"
 #include "rtl/net/tcp.h"
 
-
-// 
 // intel nic - network interface controller.
-#include "hal/dev/tty/net/nicintel.h"    
-
+#include "../2io/dev/netdev/e1000/nicintel.h"
 
 #include "rtl/net/in.h"
 #include "rtl/net/un.h"
@@ -356,10 +345,9 @@ extern unsigned long stack0_krn_ptr;
 
 
 // devices
-#include "hal/dev/devices.h"
-#include "hal/dev/devmgr.h"      
- 
-#include "hal/io.h"               //io.
+#include "../2io/dev/devices.h"
+#include "../2io/dev/devmgr.h"      
+#include "../2io/io.h"               //io.
 
 #include "land/modules.h"     //module manager.
 #include "land/debug.h"
@@ -396,8 +384,10 @@ extern unsigned long stack0_krn_ptr;
 #include "land/ke.h"
 #include "land/ki.h"
 #include "land/info.h"
-#include "land/request.h"
-#include "land/reboot.h"
+
+#include "../0mem/request.h"
+#include "../0mem/reboot.h"
+
 #include "land/sub.h"       // gramado sub systems
 #include "land/utsname.h"
 #include "land/gpid.h"      // Globals. PIDs support.

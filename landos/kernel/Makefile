@@ -347,6 +347,9 @@ all-c:
 	$(CC) -c 2io/dev/blkdev/ide/atahdd.c   $(KINCLUDE) $(CFLAGS) -o atahdd.o
 	$(CC) -c 2io/dev/blkdev/storage/storage.c  $(KINCLUDE) $(CFLAGS) -o storage.o
 
+	# 2io/dev/netdev
+	$(CC) -c 2io/dev/netdev/e1000/e1000.c   $(KINCLUDE) $(CFLAGS) -o e1000.o
+
 	# =======================================
 	# Console support:
 	# The console is responsable for the output.
@@ -364,9 +367,6 @@ all-c:
 	$(CC) -c 2io/dev/tty/chardev/hid/video.c            $(KINCLUDE) $(CFLAGS) -o video.o
 	$(CC) -c 2io/dev/tty/chardev/hid/vsync.c            $(KINCLUDE) $(CFLAGS) -o vsync.o
 	$(CC) -c 2io/dev/tty/chardev/serial/serial.c        $(KINCLUDE) $(CFLAGS) -o serial.o
-
-	# 2io/dev/tty/netdev
-	$(CC) -c 2io/dev/tty/netdev/e1000/e1000.c   $(KINCLUDE) $(CFLAGS) -o e1000.o
 
 	# tty infra structure
 	# 2io/dev/tty
@@ -434,6 +434,9 @@ all-c:
 link-kernel:
 	@echo "================================="
 	@echo "(Step 2) Linking the kernel image ..."
+
+# todo
+# Let's make groups of objects and link in groups just like libraries.
 
 	#debug
 	#$(LD) $(LDFLAGS) -T link.ld -o KERNEL.BIN $(OBJECTS) -Map kernel.map    
